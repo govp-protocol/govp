@@ -1,27 +1,54 @@
 name: release
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing signed release tag"
+        required: true
+        default: "v0.1.9"
+        type: string
+      confirmation:
+        description: "Type release-govp to authorize immutable publication"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   package:
+    if: inputs.confirmation == 'release-govp'
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
+      - name: Require a GitHub-verified annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq .object.type)"
+          object_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq .object.sha)"
+          test "$object_type" = "tag"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$object_sha" --jq .verification.verified)" = "true"
       - name: Verify release version
         run: |
           version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
           runtime="$(PYTHONPATH=src python -c 'import govp; print(govp.__version__)')"
-          test "$GITHUB_REF_NAME" = "v$version"
+          test "$RELEASE_TAG" = "v$version"
           test "$runtime" = "$version"
       - name: Build Python distributions with the reviewed toolchain
         run: |
@@ -30,6 +57,8 @@ jobs:
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
           python -m build --no-isolation
           python -m twine check dist/*
+          version="${RELEASE_TAG#v}"
+          git archive --format=zip --prefix="GOVP-$version/" --output="dist/GOVP-$version-source.zip" HEAD
           cp LICENSE NOTICE TRADEMARKS.md DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md dist/
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -37,6 +66,7 @@ jobs:
           path: |
             dist/*.whl
             dist/*.tar.gz
+            dist/GOVP-*-source.zip
             dist/LICENSE
             dist/NOTICE
             dist/TRADEMARKS.md
@@ -45,6 +75,7 @@ jobs:
           if-no-files-found: error
 
   binary:
+    if: inputs.confirmation == 'release-govp'
     strategy:
       matrix:
         include:
@@ -62,6 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
+          ref: ${{ inputs.tag }}
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
@@ -101,10 +133,14 @@ jobs:
           path: dist/${{ matrix.artifact }}
 
   publish:
+    if: inputs.confirmation == 'release-govp'
     needs: [package, binary]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -113,11 +149,13 @@ jobs:
       - name: Checksums
         working-directory: release
         run: >-
-          sha256sum govp-* LICENSE NOTICE TRADEMARKS.md
+          sha256sum GOVP-* govp-* LICENSE NOTICE TRADEMARKS.md
           DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md > SHA256SUMS
-      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          files: |
+      - name: Create complete draft, then publish immutably
+        run: |
+          version="${RELEASE_TAG#v}"
+          release_assets=(
+            release/GOVP-*
             release/govp-*
             release/LICENSE
             release/NOTICE
@@ -125,4 +163,7 @@ jobs:
             release/DEPENDENCY-LICENSES.md
             release/THIRD_PARTY_NOTICES.md
             release/SHA256SUMS
-          generate_release_notes: true
+          )
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --generate-notes --title "GOVP $version" "${release_assets[@]}"
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          gh release verify "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
