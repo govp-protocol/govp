@@ -1,0 +1,24 @@
+{
+  "format": "govp-brand-assets-v1",
+  "identity_version": "1.0",
+  "canonical_repository": "https://github.com/govp-protocol/govp",
+  "rights": "See brand/README.md and TRADEMARKS.md",
+  "raster_renderer": "sharp 0.35.2 / libvips 8.18.3",
+  "assets": {
+    "govp-avatar.png": { "sha256": "a2550eebd0b9da8b7a4d48a68fabf8157a14404e9031ae87d6aae131d2034f77", "width": 512, "height": 512 },
+    "govp-avatar.svg": { "sha256": "ee531537b28227da749677121e5a66bb2d313629732109669bbb720c061c61e4", "width": 512, "height": 512 },
+    "govp-favicon.svg": { "sha256": "c19deb9e994e220f4109fa241d34cf084906c7bed1d78c438952096acc63cb1c", "width": 64, "height": 64 },
+    "govp-flow.png": { "sha256": "42e03131f198b77fa3fd119a44493e00072585cb8f1b5dc650d712e976da6d04", "width": 1200, "height": 300 },
+    "govp-flow.svg": { "sha256": "96914dee3b92bb66e74d34d5e8b443aefeffd98f8a840fd564b31f0dda6a3689", "width": 1200, "height": 300 },
+    "govp-mark-monochrome.svg": { "sha256": "2e01ed3fbbe4aa59de26a1df1cc4fc7818eb3e1d4ceaf47bb0ba630444c69805", "width": 96, "height": 96 },
+    "govp-mark.svg": { "sha256": "e390aa2cf6d4f78cf53fc800770d9394afe373059a6a431e63b3b9a17bef5e40", "width": 96, "height": 96 },
+    "govp-org-header.png": { "sha256": "a773bcce4603c246f6a959b5188223a528e793745c3553e8675bc92e8c6c1171", "width": 1200, "height": 360 },
+    "govp-org-header.svg": { "sha256": "4d8c6278db2e1fc35ad1abce949216dd676940365b5ed9500875bdfa895953f1", "width": 1200, "height": 360 },
+    "govp-social-preview.png": { "sha256": "5c60dbc6068a291f55f5aa3068504ca102fb0ecb5056a5e50f13670398513781", "width": 1280, "height": 640 },
+    "govp-social-preview.svg": { "sha256": "943093909d4b0df589d68aba204c4702bc0ca19c47fa69450c2bce292ad830d0", "width": 1280, "height": 640 },
+    "govp-wordmark-dark.png": { "sha256": "a9bea68145edd62888ebf02e4b5614958d08f0bb07135e75c99f72055d3be5ba", "width": 720, "height": 220 },
+    "govp-wordmark-dark.svg": { "sha256": "751bffe70be5f48220f486995d0455ae9cde47d26a8b894b56550feeb9ebbe9c", "width": 720, "height": 220 },
+    "govp-wordmark-light.png": { "sha256": "036ddb4025ba994f68d9dafed0cbcf99b5ce32df98a0b82d6d137d4878e99f7f", "width": 720, "height": 220 },
+    "govp-wordmark-light.svg": { "sha256": "9a2efde7b90063fa287a3c298514120e94e171a2324bec5680265ef05faf5a6c", "width": 720, "height": 220 }
+  }
+}

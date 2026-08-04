@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">GOVP avatar</title>
+  <desc id="desc">The GOVP verification path mark on a midnight blue square.</desc>
+  <rect width="512" height="512" rx="112" fill="#07182C"/>
+  <path d="M360 164C334 138.4 298.8 124 260 124C184.8 124 124 184.8 124 260S184.8 396 260 396C325.2 396 380 350 392.8 288H280V244H376" fill="none" stroke="#5C8DFF" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="360" cy="164" r="18" fill="#32D6F3"/>
+  <circle cx="376" cy="244" r="18" fill="#32D6F3"/>
+</svg>
