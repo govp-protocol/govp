@@ -19,10 +19,14 @@ material synchronized.
    installer and documentation.
 8. Synchronize the specification, schema, vectors, installer and release
    checksums on `govp.io`.
-9. Create the immutable `vX.Y.Z` tag and GitHub release from the reviewed
-   commit. Publish PyPI only through the protected OIDC environment.
-10. Verify every published asset from a fresh download and retain the release
-    manifest.
+9. Create a signed annotated `vX.Y.Z` tag from the reviewed commit and
+   require GitHub to report its signature as verified.
+10. Run the manual `release` workflow. It builds every asset, creates a draft,
+    attaches the complete asset set and only then publishes the release under
+    the repository's release-immutability policy.
+11. Verify the release attestation and every published asset from a fresh
+    download, then retain the release manifest. Publish PyPI only through the
+    protected OIDC environment.
 
 ## Required repository controls
 

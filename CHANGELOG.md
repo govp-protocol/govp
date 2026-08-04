@@ -3,7 +3,7 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
-## 0.1.8 — pending public release
+## 0.1.8 — 2026-08-04
 
 - make RFC 3339 fractional-second validation identical on Python 3.10 through
   3.14 without altering the signed timestamp;

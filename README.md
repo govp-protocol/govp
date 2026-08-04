@@ -185,6 +185,14 @@ versioning, new conformance vectors and migration analysis.
 The current reference verifier is **0.1.8**. The audited publication baseline
 is commit
 [`c25516f471ed38f4b28a23b8eaa9af490a8f7f8b`](https://github.com/govp-protocol/govp/commit/c25516f471ed38f4b28a23b8eaa9af490a8f7f8b).
+Download the
+[`v0.1.8` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.8)
+or verify its GitHub release attestation:
+
+```bash
+gh release verify v0.1.8 --repo govp-protocol/govp
+```
+
 The public [provenance manifest](https://govp.io/PROTOCOL-SOURCE.json) records
 that commit, its Git tree, the reviewed source-archive hash and the exact
 hashes of every normative artifact. Documentation-only commits on `main` do
