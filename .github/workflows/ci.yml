@@ -39,6 +39,7 @@ jobs:
       - run: python -m pip install -c requirements-release.txt -r requirements-test.txt .
       - run: ruff check .
       - run: mypy --check-untyped-defs src
+      - run: python tools/check_brand_assets.py
       - run: bandit -q -r src packaging
       - run: pip-audit -r requirements-release.txt --progress-spinner=off
 

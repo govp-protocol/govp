@@ -1,6 +1,12 @@
-# GOVP
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/govp-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="brand/govp-wordmark-light.svg">
+    <img alt="GOVP — Sign once. Verify anywhere." src="brand/govp-wordmark-light.svg" width="560">
+  </picture>
+</p>
 
-## Sign once. Verify anywhere.
+<p align="center"><strong>Open protocol stewarded by Gemacode.</strong></p>
 
 GOVP is an open protocol for making files and digital artifacts independently
 verifiable without an account, a central API or a proprietary verifier.
@@ -14,6 +20,10 @@ the exact artifact bytes locally with any conforming implementation.
 [Browser verifier](https://govp.io/govp/verify.html) ·
 [Conformance vectors](conformance/vectors.json) ·
 [Security](SECURITY.md)
+
+<p align="center">
+  <img alt="Sign a portable GOVP record, distribute it beside an artifact, then verify both locally." src="brand/govp-flow.svg" width="960">
+</p>
 
 ## Why GOVP exists
 
@@ -207,6 +217,8 @@ not redefine the GOVP-1 wire format.
 - `examples/` — valid signed records with fully synthetic content
 - `tests/` — protocol, transport and CLI regression tests
 - `docs/` — adoption, integration, security and release guidance
+- `brand/` — canonical editable GOVP visual identity and usage rules
+- `tools/` — repository integrity checks for non-normative publication assets
 
 ## Contribute
 
@@ -224,8 +236,9 @@ implementing the specification.
 
 The specification, conformance material, software and repository documentation
 are licensed under Apache License 2.0. Copyright is held by Brilyetz Holding
-S.L.; Gemacode is its brand. Apache-2.0 does not grant rights to the GOVP or
-Gemacode names—see [TRADEMARKS.md](TRADEMARKS.md).
+S.L.; Gemacode is its brand. The visual identity files in `brand/` are
+separately governed by their usage rules. Apache-2.0 does not grant rights to
+the GOVP or Gemacode names or marks—see [TRADEMARKS.md](TRADEMARKS.md).
 
 The repository is protocol-only. Issuing products, control panels, customer
 systems, private keys and commercial extensions are excluded by
