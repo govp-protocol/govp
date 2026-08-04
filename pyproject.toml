@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "govp"
+version = "0.1.8"
+description = "Offline reference verifier for the GOVP open evidence protocol"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "TRADEMARKS.md", "DEPENDENCY-LICENSES.md", "THIRD_PARTY_NOTICES.md"]
+authors = [{ name = "Gemacode" }]
+maintainers = [{ name = "GOVP Protocol" }]
+keywords = ["evidence", "verification", "ed25519", "open-protocol", "provenance"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Security",
+  "Topic :: Security :: Cryptography",
+]
+dependencies = ["certifi>=2024.7.4", "cryptography>=50"]
+
+[project.urls]
+Homepage = "https://govp.io"
+Repository = "https://github.com/govp-protocol/govp"
+Specification = "https://govp.io/govp/spec/govp-1.html"
+Documentation = "https://govp.io/govp/docs.html"
+Issues = "https://github.com/govp-protocol/govp/issues"
+
+[project.scripts]
+govp = "govp.cli:main"
+
+[project.entry-points."pipx.run"]
+govp = "govp.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/govp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/LICENSE",
+  "/NOTICE",
+  "/DEPENDENCY-LICENSES.md",
+  "/README.md",
+  "/SCOPE.md",
+  "/TRADEMARKS.md",
+  "/CODE_OF_CONDUCT.md",
+  "/CHANGELOG.md",
+  "/CONTRIBUTING.md",
+  "/GOVERNANCE.md",
+  "/SECURITY.md",
+  "/SUPPORT.md",
+  "/THIRD_PARTY_NOTICES.md",
+  "/pyproject.toml",
+  "/requirements-release.txt",
+  "/requirements-test.txt",
+  "/docs",
+  "/src",
+  "/spec",
+  "/schema",
+  "/conformance",
+  "/examples",
+  "/tests",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

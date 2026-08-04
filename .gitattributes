@@ -1,0 +1,4 @@
+* text=auto
+examples/*.govp.txt text eol=lf
+examples/*.statement.txt text eol=lf
+conformance/*.json text eol=lf

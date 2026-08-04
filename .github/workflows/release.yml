@@ -1,0 +1,128 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Verify release version
+        run: |
+          version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          runtime="$(PYTHONPATH=src python -c 'import govp; print(govp.__version__)')"
+          test "$GITHUB_REF_NAME" = "v$version"
+          test "$runtime" = "$version"
+      - name: Build Python distributions with the reviewed toolchain
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-release.txt
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          python -m build --no-isolation
+          python -m twine check dist/*
+          cp LICENSE NOTICE TRADEMARKS.md DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md dist/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: python-package-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/LICENSE
+            dist/NOTICE
+            dist/TRADEMARKS.md
+            dist/DEPENDENCY-LICENSES.md
+            dist/THIRD_PARTY_NOTICES.md
+          if-no-files-found: error
+
+  binary:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: govp-linux-x86_64
+          - os: ubuntu-24.04-arm
+            artifact: govp-linux-arm64
+          - os: macos-15-intel
+            artifact: govp-macos-x86_64
+          - os: macos-14
+            artifact: govp-macos-arm64
+          - os: windows-latest
+            artifact: govp-windows-x86_64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -U pip
+      - run: python -m pip install -r requirements-release.txt
+      - run: python -m pip install --no-build-isolation .
+      - run: pytest
+      - run: pyinstaller --onefile --name govp packaging/entry.py
+      - name: Test the standalone binary
+        shell: bash
+        run: |
+          if [ -f dist/govp.exe ]; then
+            dist/govp.exe self-test
+          else
+            dist/govp self-test
+          fi
+      - name: Verify HTTPS from the standalone binary
+        shell: bash
+        run: |
+          if [ -f dist/govp.exe ]; then
+            dist/govp.exe verify-url https://govp.io/.well-known/govp.txt
+          else
+            dist/govp verify-url https://govp.io/.well-known/govp.txt
+          fi
+      - name: Rename binary
+        shell: bash
+        run: |
+          if [ -f dist/govp.exe ]; then
+            mv dist/govp.exe "dist/${{ matrix.artifact }}"
+          else
+            mv dist/govp "dist/${{ matrix.artifact }}"
+          fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+
+  publish:
+    needs: [package, binary]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          path: release
+          merge-multiple: true
+      - name: Checksums
+        working-directory: release
+        run: >-
+          sha256sum govp-* LICENSE NOTICE TRADEMARKS.md
+          DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md > SHA256SUMS
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: |
+            release/govp-*
+            release/LICENSE
+            release/NOTICE
+            release/TRADEMARKS.md
+            release/DEPENDENCY-LICENSES.md
+            release/THIRD_PARTY_NOTICES.md
+            release/SHA256SUMS
+          generate_release_notes: true

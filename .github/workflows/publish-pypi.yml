@@ -1,0 +1,77 @@
+name: publish-pypi
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to publish"
+        required: true
+        default: "v0.1.8"
+        type: string
+      confirmation:
+        description: "Type publish-govp to authorize the irreversible upload"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: inputs.confirmation == 'publish-govp'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ inputs.tag }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Verify release tag and version
+        working-directory: source
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          runtime="$(PYTHONPATH=src python -c 'import govp; print(govp.__version__)')"
+          test "$RELEASE_TAG" = "v$version"
+          test "$runtime" = "$version"
+      - name: Build wheel and source distribution
+        working-directory: source
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-release.txt
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          python -m build --no-isolation
+          python -m twine check dist/*
+      - name: Test the built wheel
+        working-directory: source
+        run: |
+          python -m venv package-test
+          package-test/bin/python -m pip install dist/*.whl
+          package-test/bin/govp self-test
+          package-test/bin/govp verify examples/manufacturing-record.govp.txt \
+            --asset examples/manufacturing-record.statement.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: python-package-distributions
+          path: source/dist/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/govp/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish to PyPI with OIDC
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # release/v1

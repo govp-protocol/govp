@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: mailto:research@gemacode.org
+    about: Follow SECURITY.md and report exploitable vulnerabilities privately.
