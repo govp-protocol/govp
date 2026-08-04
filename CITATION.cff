@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use GOVP in research or an implementation, please cite it using this metadata."
+title: "GOVP: an open protocol for portable, independently verifiable artifacts"
+type: software
+authors:
+  - name: Gemacode
+version: 0.1.8
+date-released: 2026-08-04
+repository-code: "https://github.com/govp-protocol/govp"
+url: "https://govp.io"
+license: Apache-2.0
+abstract: >-
+  GOVP binds a readable Ed25519-signed record to an artifact identifier and
+  the SHA-256 digest of exact artifact bytes. Verification is deterministic
+  and does not require a GOVP account, central API or hosted service.
+keywords:
+  - artifact verification
+  - digital signatures
+  - Ed25519
+  - provenance
+  - conformance
+  - open protocol

@@ -1,0 +1,55 @@
+name: Independent implementation
+description: Propose or report a GOVP implementation in another language or runtime.
+title: "[Implementation]: "
+body:
+  - type: input
+    id: language
+    attributes:
+      label: Language and runtime
+      placeholder: "Rust 1.XX / WebAssembly"
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Public repository or proposal
+      description: Provide a URL when code already exists, or describe the planned project.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Intended scope
+      multiple: true
+      options:
+        - Text-record parser
+        - JSON bundle parser
+        - Core verifier
+        - Remote HTTPS verifier
+        - Issuer or signing library
+        - Command-line interface
+    validations:
+      required: true
+  - type: textarea
+    id: conformance
+    attributes:
+      label: Conformance status
+      description: List vector suites already passing and any behavior not yet implemented.
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: Questions or ambiguities
+      description: Identify any normative behavior that is not fully determined by the specification and vectors.
+  - type: checkboxes
+    id: commitments
+    attributes:
+      label: Implementation commitments
+      options:
+        - label: I will treat the normative text and byte-exact vectors as the interoperability contract.
+          required: true
+        - label: I will not claim identity certification, factual truth or timestamp guarantees from core GOVP validity.
+          required: true
+        - label: Examples and reports contain no secrets, personal data, customer data or private keys.
+          required: true

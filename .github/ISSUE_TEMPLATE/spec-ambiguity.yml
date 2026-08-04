@@ -1,0 +1,60 @@
+name: Specification ambiguity
+description: Report GOVP-1 text that permits conflicting conforming interpretations.
+title: "[Spec ambiguity]: "
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Stop rather than inventing behavior when the normative text and
+        conformance vectors do not determine one result. Use only synthetic
+        examples and report exploitable security problems privately.
+  - type: input
+    id: section
+    attributes:
+      label: Normative section or field
+      description: Link to the exact GOVP-1 section or name the affected field.
+      placeholder: "GOVP-1 section 4.2 / Generated-At"
+    validations:
+      required: true
+  - type: textarea
+    id: interpretations
+    attributes:
+      label: Conflicting interpretations
+      description: Describe at least two plausible interpretations and their observable results.
+    validations:
+      required: true
+  - type: textarea
+    id: vectors
+    attributes:
+      label: Conformance evidence
+      description: Explain which existing vectors were tested and why they do not resolve the ambiguity.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal synthetic example
+      description: Include the smallest safe record or pseudocode that demonstrates the difference.
+    validations:
+      required: true
+  - type: dropdown
+    id: wire_impact
+    attributes:
+      label: Potential interoperability impact
+      options:
+        - Different canonical signing bytes
+        - Different validity result
+        - Different GOVP-ID
+        - Different warning or advisory result
+        - Documentation only or unknown
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: This report contains no secrets, personal data, customer data or private keys.
+          required: true
+        - label: This is not an undisclosed exploitable vulnerability requiring a private advisory.
+          required: true
