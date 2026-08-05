@@ -8,17 +8,16 @@ required.
 
 - Python 3.10 or newer
 - a supported operating system with Python wheels for `cryptography`
-- the GOVP source checkout or a published package
+- the published `govp` package
 
-## Install from the repository
+## Install from PyPI
 
 ```bash
-git clone https://github.com/govp-protocol/govp.git
-cd govp
 python -m venv .venv
 . .venv/bin/activate
-python -m pip install .
+python -m pip install govp
 govp self-test
+govp conformance --run
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`.
@@ -26,8 +25,9 @@ On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`.
 ## Verify the bundled example
 
 ```bash
-govp verify examples/manufacturing-record.govp.txt \
-  --asset examples/manufacturing-record.statement.txt
+govp examples --extract govp-examples
+govp verify govp-examples/manufacturing-record.govp.txt \
+  --asset govp-examples/manufacturing-record.statement.txt
 ```
 
 The result is valid only when the record format, signature, GOVP-ID and
@@ -37,8 +37,8 @@ is reported as `not checked`.
 For machine-readable output:
 
 ```bash
-govp verify examples/manufacturing-record.govp.txt \
-  --asset examples/manufacturing-record.statement.txt \
+govp verify govp-examples/manufacturing-record.govp.txt \
+  --asset govp-examples/manufacturing-record.statement.txt \
   --json
 ```
 
@@ -48,7 +48,7 @@ guarantee. Retain the individual checks and any advisory `warnings`.
 ## Verify a remote identity record
 
 ```bash
-govp verify-url https://publisher.example/.well-known/govp.txt --json
+govp verify-url https://govp.io/.well-known/govp.txt --json
 ```
 
 Remote verification accepts HTTPS only, follows HTTPS redirects, caps the
@@ -65,3 +65,16 @@ signed `canonical` value. It does not download or execute the evidence URL.
 
 Continue with the [integration guide](integration.md) for application use and
 the [security model](security-model.md) before exposing results to end users.
+
+## Development and independent audit
+
+Clone the repository only when developing GOVP, running the complete source
+test suite or auditing the exact release tree:
+
+```bash
+git clone --branch v0.1.9 --depth 1 https://github.com/govp-protocol/govp.git
+cd govp
+python -m pip install -r requirements-test.txt
+python -m pip install .
+pytest --strict-config --strict-markers
+```

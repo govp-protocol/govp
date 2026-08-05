@@ -13,8 +13,8 @@ material synchronized.
    or operational data.
 5. Build wheel and source distribution twice with the commit timestamp as
    `SOURCE_DATE_EPOCH`; require byte-identical output.
-6. Install the wheel in an isolated environment and run self-test plus signed
-   example verification.
+6. Install the wheel in an isolated environment, run `self-test`, run the
+   bundled conformance suites, extract the bundled examples and verify them.
 7. Confirm version equality in `pyproject.toml`, `govp.__version__`, tag,
    installer and documentation.
 8. Synchronize the specification, schema, vectors, installer and release
@@ -27,6 +27,8 @@ material synchronized.
 11. Verify the release attestation and every published asset from a fresh
     download, then retain the release manifest. Publish PyPI only through the
     protected OIDC environment.
+12. Install the exact PyPI version in a clean environment and verify both
+    `govp conformance --run` and the canonical `govp.io` identity record.
 
 ## Required repository controls
 

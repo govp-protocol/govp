@@ -13,6 +13,10 @@ is a review aid, not a replacement for each dependency's own license file.
 Both alternatives are free software licenses. GOVP does not require a hosted
 service, proprietary SDK or non-free runtime component.
 
+The supported lower bounds are pinned in `requirements-minimum.txt` and run in
+CI on Python 3.10 and 3.14. They are support and security baselines, not claims
+about the earliest upstream release containing a particular primitive.
+
 ## Build and test
 
 | Dependency | License | Purpose |

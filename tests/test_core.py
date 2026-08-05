@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
+import govp
 from govp.core import (
     RECORD_DOMAIN,
     load_record,
@@ -16,6 +17,20 @@ from govp.core import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_top_level_api_exports_stable_verifier_contract():
+    fields = govp.parse_record(
+        (ROOT / "examples/manufacturing-record.govp.txt").read_text(encoding="utf-8")
+    )
+    result = govp.verify(fields)
+
+    assert isinstance(result, govp.Verification)
+    assert isinstance(result, govp.VerifyResult)
+    assert govp.derive_govp_id(
+        fields["asset-type"], fields["asset-id"], fields["asset-sha256"]
+    ) == fields["govp-id"]
+    assert govp.signing_input(fields) == signing_input(fields)
 
 
 def test_all_conformance_vectors():
