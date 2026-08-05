@@ -228,7 +228,7 @@ normative text and published vectors, not by matching Python internals.
 | Language/runtime | Project | Status |
 |---|---|---|
 | Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.10 |
-| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://github.com/govp-protocol/govp-js) | Independent verifier · 0.1.0 |
+| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://github.com/govp-protocol/govp-js) | Independent verifier · 0.1.1 |
 | Browser demo | [`govp.io`](https://github.com/govp-protocol/govp.io) | Interactive GOVP-1 verification |
 | Go | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Rust | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
