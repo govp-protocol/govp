@@ -37,7 +37,7 @@ from .core import (
     signing_input,
     verify,
 )
-from .status import evaluate_status, load_status, parse_status
+from .status import StatusResult, evaluate_status, load_status, parse_status
 
 MAX_RECORD_BYTES = 1024 * 1024
 
@@ -128,12 +128,33 @@ def command_verify_url(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
-def _print_status(result, as_json: bool) -> None:
+STATUS_CHECK_NAMES = (
+    "core",
+    "status-format",
+    "status-canonical",
+    "same-origin",
+    "key-active",
+    "record-not-revoked",
+)
+
+
+def _tri_state(value: bool | None) -> bool | None:
+    if value is True:
+        return True
+    if value is False:
+        return False
+    return None
+
+
+def _print_status(result: StatusResult, as_json: bool) -> None:
+    checks = {
+        name: _tri_state(result.checks.get(name)) for name in STATUS_CHECK_NAMES
+    }
     payload = {
-        "currently_trusted": result.currently_trusted,
-        "snapshot_trusted": result.snapshot_trusted,
-        "checks": result.checks,
-        "reasons": list(result.reasons),
+        "currently_trusted": _tri_state(result.currently_trusted),
+        "snapshot_trusted": result.snapshot_trusted is True,
+        "checks": checks,
+        "reasons": [name for name, value in checks.items() if value is False],
     }
     if as_json:
         print(json.dumps(payload, indent=2, sort_keys=True))
@@ -143,7 +164,7 @@ def _print_status(result, as_json: bool) -> None:
     else:
         label = "CURRENTLY TRUSTED" if result.currently_trusted else "NOT TRUSTED"
     print("GOVP status:", label)
-    for name, value in result.checks.items():
+    for name, value in checks.items():
         check = "not checked" if value is None else ("pass" if value else "FAIL")
         print(f"  {name:<20} {check}")
 
