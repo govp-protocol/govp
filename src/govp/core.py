@@ -6,14 +6,20 @@ import base64
 import hashlib
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from os import PathLike
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 
 RECORD_DOMAIN = b"GOVP::record.v1\x00"
 TYPECODE = {
@@ -144,7 +150,9 @@ def parse_record(text: str) -> dict[str, str]:
     return fields
 
 
-def load_record(path: Path) -> dict[str, str]:
+def load_record(path: str | PathLike[str]) -> dict[str, str]:
+    """Load a text record or JSON record/bundle from any path-like value."""
+    path = Path(path)
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() == ".json":
         payload: Any = json.loads(text)
@@ -209,6 +217,109 @@ def signing_input(fields: dict[str, str]) -> bytes:
 
 def signing_message(fields: dict[str, str]) -> bytes:
     return RECORD_DOMAIN + signing_input(fields)
+
+
+def sign_record(
+    fields: Mapping[str, str],
+    private_key: Ed25519PrivateKey,
+) -> dict[str, str]:
+    """Create a complete GOVP-1 record with computed identity and signature.
+
+    The caller remains responsible for private-key custody and for the truth of
+    every declared field. Computed fields are rejected as input so stale IDs,
+    public keys or signatures cannot be silently reused.
+    """
+    if not isinstance(private_key, Ed25519PrivateKey):
+        raise TypeError("private_key must be an Ed25519PrivateKey")
+    computed = {"govp-id", "public-key", "signature"}
+    record: dict[str, str] = {}
+    for key, value in fields.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise TypeError("record field names and values must be strings")
+        normalized_key = normalize_field_name(key)
+        canonical_key = LEGACY.get(normalized_key, normalized_key)
+        if canonical_key in computed:
+            raise ValueError(f"{canonical_key} is computed and must not be supplied")
+        record[canonical_key] = trim_field_value(value)
+    if record.get("version", "GOVP-1") != "GOVP-1":
+        raise ValueError("sign_record only emits GOVP-1 records")
+    record["version"] = "GOVP-1"
+    govp_id = derive_govp_id(
+        record.get("asset-type", ""),
+        record.get("asset-id", ""),
+        record.get("asset-sha256", ""),
+    )
+    if govp_id is None:
+        raise ValueError("asset-type must be a registered GOVP-1 type")
+    record["govp-id"] = govp_id
+    public_key = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+    record["public-key"] = base64.b64encode(public_key).decode("ascii")
+    record["signature"] = base64.b64encode(
+        private_key.sign(signing_message(record))
+    ).decode("ascii")
+    result = verify(record)
+    if not result.ok:
+        raise ValueError("record fields do not form a valid GOVP-1 record")
+    return record
+
+
+DISPLAY_FIELD_ORDER = (
+    "version",
+    "canonical",
+    "publisher",
+    "asset-type",
+    "asset-id",
+    "asset-sha256",
+    "license",
+    "profile",
+    "generated-at",
+    "govp-id",
+    "evidence",
+    "public-key",
+    "signature",
+)
+DISPLAY_FIELD_LABELS = {
+    "version": "Version",
+    "canonical": "Canonical",
+    "publisher": "Publisher",
+    "asset-type": "Asset-Type",
+    "asset-id": "Asset-ID",
+    "asset-sha256": "Asset-SHA256",
+    "license": "License",
+    "profile": "Profile",
+    "generated-at": "Generated-At",
+    "govp-id": "GOVP-ID",
+    "evidence": "Evidence",
+    "public-key": "Public-Key",
+    "signature": "Signature",
+}
+
+
+def serialize_record(fields: Mapping[str, str]) -> str:
+    """Serialize a GOVP-1 mapping into its readable line-oriented form."""
+    normalized: dict[str, str] = {}
+    for key, value in fields.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise TypeError("record field names and values must be strings")
+        normalized_key = normalize_field_name(key)
+        canonical_key = LEGACY.get(normalized_key, normalized_key)
+        normalized[canonical_key] = trim_field_value(value)
+    _validate_signable_fields(normalized)
+    ordered = [key for key in DISPLAY_FIELD_ORDER if key in normalized]
+    ordered.extend(
+        sorted(
+            (key for key in normalized if key not in DISPLAY_FIELD_ORDER),
+            key=lambda key: key.encode("utf-8"),
+        )
+    )
+    return "".join(
+        f"{DISPLAY_FIELD_LABELS.get(key, key)}: {normalized[key]}\n"
+        for key in ordered
+        if normalized[key]
+    )
 
 
 def derive_govp_id(asset_type: str, asset_id: str, asset_sha256: str) -> str | None:

@@ -42,6 +42,10 @@ present, it is an RFC 3339 UTC timestamp ending in `Z`. A fractional second,
 when present, contains one or more digits and has the same format verdict on
 every supported runtime.
 
+For online verification, `canonical` is the exact final HTTPS URL that serves
+that record. `/.well-known/govp.txt` is the domain identity record; a record
+published at `/.well-known/govp/<id>.govp` names that individual URL instead.
+
 ## GOVP-ID
 
 For supported artifact types, calculate SHA-256 over:

@@ -3,6 +3,23 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## 0.1.10 — 2026-08-05
+
+- accept `str` and all standard path-like values in the public `load_record`
+  API;
+- add explicit `--ca-bundle` support while retaining Certifi as the secure,
+  reproducible default for network and standalone verification;
+- add `sign_record`, `serialize_record` and `govp issue` so adopters can emit
+  conforming records without reconstructing the signing algorithm;
+- publish the separate GOVP-STATUS-1 extension, schema, conformance vectors,
+  status API and CLI for fail-closed online key and record status;
+- document planned rotation, compromise response, local issuance and the IANA
+  Well-Known URI registration request;
+- clarify that a discovered record's canonical field names its own exact final
+  URL, while `/.well-known/govp.txt` remains the domain identity record;
+- add public-domain monitoring and first-party production evidence without
+  changing GOVP-1 signing bytes or core-verification semantics.
+
 ## 0.1.9 — 2026-08-05
 
 - make `pip install govp` the primary installation path and ensure every

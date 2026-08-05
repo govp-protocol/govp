@@ -21,6 +21,10 @@ Core validity does not establish that:
 - the signer was authorized under an external legal or business process;
 - a linked resource is safe to open or execute.
 
+GOVP-STATUS-1 can add a current same-origin HTTPS statement about active keys
+and revoked records. A saved status document is only a snapshot; it cannot
+establish current trust.
+
 ## Trust boundaries
 
 Private keys never belong in this repository, a web root or a GOVP record.
@@ -34,9 +38,11 @@ context and apply a local allowlist before following evidence schemes.
 ## Network verifier
 
 The reference network command requires HTTPS for records and redirects,
-rejects credentials, validates UTF-8, uses a fixed CA bundle, applies a timeout
-and limits downloads to 1 MiB. It never fetches the declared asset or evidence
-URI automatically.
+rejects credentials, validates UTF-8, uses Certifi by default, applies a timeout
+and limits downloads to 1 MiB. Enterprise users must select a different trust
+store explicitly with `--ca-bundle`; ambient CA environment variables are not
+used. The verifier never fetches the declared asset or evidence URI
+automatically.
 
 ## Cryptographic scope
 

@@ -16,6 +16,7 @@ from .core import (
     signing_input,
     verify,
 )
+from .status import _status_format_ok
 
 
 @dataclass(frozen=True)
@@ -120,6 +121,30 @@ def run_bundled_conformance() -> ConformanceResult:
                 failures.append(f"{name}: {error}")
 
     return ConformanceResult(not failures, passed, total, tuple(failures))
+
+
+def run_bundled_status_conformance() -> ConformanceResult:
+    """Run the independently versioned GOVP-STATUS-1 vectors."""
+    failures: list[str] = []
+    passed = 0
+    corpus = _read_json("conformance", "status-vectors.json")
+    vectors = corpus.get("vectors")
+    if not isinstance(vectors, list):
+        raise TypeError("bundled status conformance vectors must be a list")
+    for index, vector in enumerate(vectors, start=1):
+        name = str(vector.get("name", f"status-{index}"))
+        try:
+            observed = _status_format_ok(vector["status"])
+            expected = bool(vector["expected"]["schema_valid"])
+            if observed == expected:
+                passed += 1
+            else:
+                failures.append(f"{name}: validity mismatch")
+        except (KeyError, TypeError, ValueError) as error:
+            failures.append(f"{name}: {error}")
+    return ConformanceResult(
+        not failures, passed, len(vectors), tuple(failures)
+    )
 
 
 def extract_bundled_examples(destination: Path) -> tuple[Path, ...]:
