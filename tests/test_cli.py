@@ -179,6 +179,43 @@ def test_inspect_id_self_test_and_parser_commands(capsys):
     assert args.handler is cli.command_verify
 
 
+def test_bundled_conformance_and_example_extraction(tmp_path, capsys):
+    assert cli.command_conformance(Namespace(run=True)) == 0
+    output = capsys.readouterr().out
+    assert "GOVP conformance: PASS" in output
+    assert "18/18 vectors" in output
+
+    destination = tmp_path / "govp-examples"
+    assert cli.command_examples(Namespace(directory=str(destination))) == 0
+    output = capsys.readouterr().out
+    assert "Extracted 3 synthetic GOVP examples" in output
+
+    record = destination / "manufacturing-record.govp.txt"
+    asset = destination / "manufacturing-record.statement.txt"
+    tampered = destination / "manufacturing-record.tampered.statement.txt"
+    assert record.is_file()
+    assert asset.is_file()
+    assert tampered.is_file()
+    assert cli.command_verify(
+        Namespace(record=str(record), asset=str(asset), json=False)
+    ) == 0
+    capsys.readouterr()
+    assert cli.command_verify(
+        Namespace(record=str(record), asset=str(tampered), json=False)
+    ) == 1
+
+
+def test_example_extraction_refuses_to_overwrite_different_file(tmp_path):
+    destination = tmp_path / "govp-examples"
+    destination.mkdir()
+    (destination / "manufacturing-record.govp.txt").write_text(
+        "different", encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="refusing to overwrite"):
+        cli.command_examples(Namespace(directory=str(destination)))
+
+
 def test_main_reports_expected_user_errors(monkeypatch, capsys):
     monkeypatch.setattr(cli.sys, "argv", ["govp", "verify", "missing.govp"])
 

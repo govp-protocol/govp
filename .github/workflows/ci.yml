@@ -25,7 +25,35 @@ jobs:
       - run: python -m pip install -c requirements-release.txt -r requirements-test.txt .
       - run: pytest --strict-config --strict-markers
       - run: govp self-test
+      - run: govp conformance --run
       - run: govp verify examples/manufacturing-record.govp.txt --asset examples/manufacturing-record.statement.txt
+
+  minimum-dependencies:
+    strategy:
+      matrix:
+        python: ["3.10", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -U pip
+      - run: python -m pip install -r requirements-minimum.txt
+      - run: python -m pip install --no-deps .
+      - run: python -m pip install -r requirements-test.txt
+      - name: Assert the supported runtime floor
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+
+          assert version("certifi") == "2024.7.4"
+          assert version("cryptography") == "50.0.0"
+          PY
+      - run: pytest --strict-config --strict-markers
+      - run: govp conformance --run
 
   quality:
     runs-on: ubuntu-latest
@@ -76,5 +104,7 @@ jobs:
           python -m venv wheel-test
           wheel-test/bin/python -m pip install dist/*.whl
           wheel-test/bin/govp self-test
-          wheel-test/bin/govp verify examples/manufacturing-record.govp.txt \
-            --asset examples/manufacturing-record.statement.txt
+          wheel-test/bin/govp conformance --run
+          wheel-test/bin/govp examples --extract wheel-examples
+          wheel-test/bin/govp verify wheel-examples/manufacturing-record.govp.txt \
+            --asset wheel-examples/manufacturing-record.statement.txt

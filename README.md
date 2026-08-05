@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="brand/govp-wordmark-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="brand/govp-wordmark-light.svg">
-    <img alt="GOVP — Sign once. Verify anywhere." src="brand/govp-wordmark-light.svg" width="560">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/govp-protocol/govp/main/brand/govp-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/govp-protocol/govp/main/brand/govp-wordmark-light.svg">
+    <img alt="GOVP — Sign once. Verify anywhere." src="https://raw.githubusercontent.com/govp-protocol/govp/main/brand/govp-wordmark-light.svg" width="560">
   </picture>
 </p>
 
@@ -16,13 +16,13 @@ dataset, model or build artifact. A recipient can then verify the record and
 the exact artifact bytes locally with any conforming implementation.
 
 [Documentation](https://govp.io/govp/docs.html) ·
-[GOVP-1 specification](spec/GOVP-1.txt) ·
+[GOVP-1 specification](https://govp.io/govp/spec/govp-1.html) ·
 [Browser verifier](https://govp.io/govp/verify.html) ·
-[Conformance vectors](conformance/vectors.json) ·
-[Security](SECURITY.md)
+[Conformance vectors](https://govp.io/govp/conformance/vectors.json) ·
+[Security](https://github.com/govp-protocol/govp/blob/main/SECURITY.md)
 
 <p align="center">
-  <img alt="Sign a portable GOVP record, distribute it beside an artifact, then verify both locally." src="brand/govp-flow.svg" width="960">
+  <img alt="Sign a portable GOVP record, distribute it beside an artifact, then verify both locally." src="https://raw.githubusercontent.com/govp-protocol/govp/main/brand/govp-flow.svg" width="960">
 </p>
 
 ## Why GOVP exists
@@ -44,7 +44,8 @@ trust service.
 
 ## A GOVP record is readable text
 
-This complete record is a synthetic fixture from [`examples/`](examples/):
+This complete record is a synthetic fixture from the
+[`examples/` directory](https://github.com/govp-protocol/govp/tree/main/examples):
 
 ```text
 # GOVP public verification record
@@ -73,11 +74,18 @@ discard signed data.
 Python 3.10 or newer is required for the reference implementation.
 
 ```bash
-git clone https://github.com/govp-protocol/govp.git
-cd govp
-python -m pip install .
-govp verify examples/manufacturing-record.govp.txt \
-  --asset examples/manufacturing-record.statement.txt
+python -m pip install govp
+govp self-test
+govp conformance --run
+```
+
+Extract and verify the signed synthetic fixtures included in the installed
+package:
+
+```bash
+govp examples --extract govp-examples
+govp verify govp-examples/manufacturing-record.govp.txt \
+  --asset govp-examples/manufacturing-record.statement.txt
 ```
 
 Expected result:
@@ -103,12 +111,12 @@ the same signed GOVP record, so the record signature still passes, but the
 modified artifact bytes no longer match the signed SHA-256 digest.
 
 <p align="center">
-  <img alt="The original synthetic artifact passes GOVP verification while a one-line modification fails the asset SHA-256 check." src="brand/govp-integrity-demo.svg" width="960">
+  <img alt="The original synthetic artifact passes GOVP verification while a one-line modification fails the asset SHA-256 check." src="https://raw.githubusercontent.com/govp-protocol/govp/main/brand/govp-integrity-demo.svg" width="960">
 </p>
 
 ```bash
-govp verify examples/manufacturing-record.govp.txt \
-  --asset examples/manufacturing-record.tampered.statement.txt
+govp verify govp-examples/manufacturing-record.govp.txt \
+  --asset govp-examples/manufacturing-record.tampered.statement.txt
 ```
 
 Expected rejection:
@@ -136,7 +144,7 @@ the command or input could not be processed.
 ```python
 from pathlib import Path
 
-from govp.core import load_record, verify
+from govp import load_record, verify
 
 record = load_record(Path("record.govp.txt"))
 asset = Path("artifact.bin").read_bytes()
@@ -151,7 +159,8 @@ print(result.derived_govp_id)
 The Python package is a reference implementation, not a network service.
 Applications remain responsible for authorization, download limits,
 persistence, display escaping and their own trust policy. See the
-[integration guide](docs/integration.md) for the complete result contract.
+[integration guide](https://govp.io/govp/integration.html) for the complete
+result contract.
 
 ## What GOVP proves — and what it does not
 
@@ -180,9 +189,9 @@ GOVP is intentionally narrower than several established technologies:
 - **GOVP** binds a small, portable signed record to exact artifact bytes with
   deterministic, service-independent verification.
 
-They solve different trust problems and can be complementary. Read
-[How GOVP fits](docs/comparison.md) for a neutral selection guide and links to
-the specifications of each project.
+They solve different trust problems and can be complementary. Read the
+[composition guide](https://govp.io/govp/composition.html) for the layered
+verification model and links to each upstream specification.
 
 ## Use cases
 
@@ -207,11 +216,11 @@ normative text and published vectors, not by matching Python internals.
 
 | Language/runtime | Project | Status |
 |---|---|---|
-| Python 3.10+ | [`govp`](src/govp/) | Reference verifier · 0.1.8 |
+| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.9 |
 | Browser JavaScript | [`govp.io`](https://github.com/govp-protocol/govp.io) | Independent verification engine · GOVP-1 |
 | Go | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Rust | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
-| Other | [Read the conformance guide](docs/conformance.md) | Welcome |
+| Other | [Read the conformance guide](https://govp.io/govp/conformance.html) | Welcome |
 
 An implementation should consume the byte-exact vectors, report every core
 check and stop on specification ambiguity rather than choosing undocumented
@@ -223,15 +232,12 @@ behavior.
 design.** Changes to signing inputs or wire behavior require explicit
 versioning, new conformance vectors and migration analysis.
 
-The current reference verifier is **0.1.8**. The audited publication baseline
-is commit
-[`c25516f471ed38f4b28a23b8eaa9af490a8f7f8b`](https://github.com/govp-protocol/govp/commit/c25516f471ed38f4b28a23b8eaa9af490a8f7f8b).
-Download the
-[`v0.1.8` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.8)
+The current reference verifier is **0.1.9**. Download the
+[`v0.1.9` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.9)
 or verify its GitHub release attestation:
 
 ```bash
-gh release verify v0.1.8 --repo govp-protocol/govp
+gh release verify v0.1.9 --repo govp-protocol/govp
 ```
 
 The public [provenance manifest](https://govp.io/PROTOCOL-SOURCE.json) records
@@ -257,11 +263,11 @@ GOVP especially welcomes independent implementations, conformance reports,
 synthetic vectors, integration guides and ambiguity reports found while
 implementing the specification.
 
-[Contributing guide](CONTRIBUTING.md) ·
+[Contributing guide](https://github.com/govp-protocol/govp/blob/main/CONTRIBUTING.md) ·
 [Report a specification ambiguity](https://github.com/govp-protocol/govp/issues/new?template=spec-ambiguity.yml) ·
 [Propose an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) ·
-[Governance](GOVERNANCE.md) ·
-[Support](SUPPORT.md)
+[Governance](https://github.com/govp-protocol/govp/blob/main/GOVERNANCE.md) ·
+[Support](https://github.com/govp-protocol/govp/blob/main/SUPPORT.md)
 
 ## License, scope and stewardship
 
@@ -269,8 +275,12 @@ The specification, conformance material, software and repository documentation
 are licensed under Apache License 2.0. Copyright is held by Brilyetz Holding
 S.L.; Gemacode is its brand. The visual identity files in `brand/` are
 separately governed by their usage rules. Apache-2.0 does not grant rights to
-the GOVP or Gemacode names or marks—see [TRADEMARKS.md](TRADEMARKS.md).
+the GOVP or Gemacode names or marks—see the
+[trademark policy](https://github.com/govp-protocol/govp/blob/main/TRADEMARKS.md).
+Earlier license grants are recorded separately in
+[`LICENSE-HISTORY.md`](https://github.com/govp-protocol/govp/blob/main/LICENSE-HISTORY.md).
 
 The repository is protocol-only. Issuing products, control panels, customer
 systems, private keys and commercial extensions are excluded by
-[`SCOPE.md`](SCOPE.md) and are not required for GOVP-1 conformance.
+[`SCOPE.md`](https://github.com/govp-protocol/govp/blob/main/SCOPE.md) and are
+not required for GOVP-1 conformance.

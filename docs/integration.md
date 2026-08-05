@@ -20,11 +20,12 @@ cryptographic verification and business policy as separate decisions.
 ```python
 from pathlib import Path
 
-from govp.core import load_record, verify
+from govp import VerifyResult, load_record, verify
 
 record = load_record(Path("record.govp.txt"))
 asset = Path("asset.bin").read_bytes()
 result = verify(record, asset_bytes=asset)
+assert isinstance(result, VerifyResult)
 
 if not result.ok:
     raise ValueError(result.checks)
@@ -59,6 +60,16 @@ Current warning identifiers are:
   than HTTP or HTTPS.
 
 Warnings do not change core validity. A deployment may reject them as policy.
+
+## Public API compatibility
+
+The supported top-level API is `verify`, `parse_record`, `load_record`,
+`derive_govp_id`, `signing_input`, `Verification` and its descriptive alias
+`VerifyResult`. Semantic-versioning decisions apply to these exported names.
+
+Imports from `govp.core` remain supported throughout the 0.1.x line for
+compatibility. Integrations should use the top-level API so implementation
+modules can evolve without expanding the public contract accidentally.
 
 ## URL handling
 

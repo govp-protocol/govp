@@ -59,7 +59,7 @@ jobs:
           python -m twine check dist/*
           version="${RELEASE_TAG#v}"
           git archive --format=zip --prefix="GOVP-$version/" --output="dist/GOVP-$version-source.zip" HEAD
-          cp LICENSE NOTICE TRADEMARKS.md DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md dist/
+          cp LICENSE NOTICE LICENSE-HISTORY.md TRADEMARKS.md DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md dist/
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: python-package-distributions
@@ -69,6 +69,7 @@ jobs:
             dist/GOVP-*-source.zip
             dist/LICENSE
             dist/NOTICE
+            dist/LICENSE-HISTORY.md
             dist/TRADEMARKS.md
             dist/DEPENDENCY-LICENSES.md
             dist/THIRD_PARTY_NOTICES.md
@@ -102,14 +103,18 @@ jobs:
       - run: python -m pip install -r requirements-release.txt
       - run: python -m pip install --no-build-isolation .
       - run: pytest
-      - run: pyinstaller --onefile --name govp packaging/entry.py
+      - run: pyinstaller --onefile --collect-data govp --name govp packaging/entry.py
       - name: Test the standalone binary
         shell: bash
         run: |
           if [ -f dist/govp.exe ]; then
             dist/govp.exe self-test
+            dist/govp.exe conformance --run
+            dist/govp.exe examples --extract govp-examples
           else
             dist/govp self-test
+            dist/govp conformance --run
+            dist/govp examples --extract govp-examples
           fi
       - name: Verify HTTPS from the standalone binary
         shell: bash
@@ -150,7 +155,7 @@ jobs:
         working-directory: release
         run: >-
           sha256sum GOVP-* govp-* LICENSE NOTICE TRADEMARKS.md
-          DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md > SHA256SUMS
+          LICENSE-HISTORY.md DEPENDENCY-LICENSES.md THIRD_PARTY_NOTICES.md > SHA256SUMS
       - name: Create complete draft, then publish immutably
         run: |
           version="${RELEASE_TAG#v}"
@@ -159,6 +164,7 @@ jobs:
             release/govp-*
             release/LICENSE
             release/NOTICE
+            release/LICENSE-HISTORY.md
             release/TRADEMARKS.md
             release/DEPENDENCY-LICENSES.md
             release/THIRD_PARTY_NOTICES.md

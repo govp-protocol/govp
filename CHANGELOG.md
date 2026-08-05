@@ -3,6 +3,24 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## 0.1.9 — 2026-08-05
+
+- make `pip install govp` the primary installation path and ensure every
+  quick-start command works without a source checkout;
+- bundle the frozen specification, schema, conformance vectors and synthetic
+  examples in both wheel and source distributions;
+- add `govp conformance --run` and `govp examples --extract DIR` for installed
+  package validation and reproducible demonstrations;
+- publish the supported top-level Python API and typed `VerifyResult` alias
+  while preserving `govp.core` compatibility;
+- replace PyPI-relative documentation links with canonical absolute URLs;
+- add a tested minimum-dependency matrix and document the reviewed security
+  floor;
+- move historical MIT licensing context to `LICENSE-HISTORY.md` so the current
+  Apache-2.0 license is unambiguous;
+- prepare live `govp.io` canonical discovery records without changing GOVP-1
+  signing inputs, signatures, identifiers or conformance verdicts.
+
 ## 0.1.8 — 2026-08-04
 
 - make RFC 3339 fractional-second validation identical on Python 3.10 through

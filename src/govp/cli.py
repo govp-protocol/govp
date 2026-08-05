@@ -17,6 +17,7 @@ from urllib.request import (
 import certifi
 
 from . import __version__
+from ._bundled import extract_bundled_examples, run_bundled_conformance
 from .core import (
     _valid_absolute_url,
     derive_govp_id,
@@ -175,6 +176,26 @@ def command_self_test(_: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def command_conformance(_: argparse.Namespace) -> int:
+    result = run_bundled_conformance()
+    print(
+        "GOVP conformance:",
+        "PASS" if result.ok else "FAIL",
+        f"({result.passed}/{result.total} vectors)",
+    )
+    for failure in result.failures:
+        print(f"  FAIL {failure}")
+    return 0 if result.ok else 1
+
+
+def command_examples(args: argparse.Namespace) -> int:
+    extracted = extract_bundled_examples(Path(args.directory))
+    print(f"Extracted {len(extracted)} synthetic GOVP examples to {args.directory}")
+    for path in extracted:
+        print(f"  {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="govp", description="Verify GOVP evidence without a central service.")
     parser.add_argument("--version", action="version", version=f"govp {__version__}")
@@ -203,6 +224,28 @@ def build_parser() -> argparse.ArgumentParser:
 
     self_test = sub.add_parser("self-test", help="run local invariants and rejection checks")
     self_test.set_defaults(handler=command_self_test)
+
+    conformance = sub.add_parser(
+        "conformance",
+        help="run the byte-exact conformance vectors bundled with GOVP",
+    )
+    conformance.add_argument(
+        "--run",
+        action="store_true",
+        required=True,
+        help="execute all bundled text and JSON vectors",
+    )
+    conformance.set_defaults(handler=command_conformance)
+
+    examples = sub.add_parser("examples", help="extract bundled synthetic examples")
+    examples.add_argument(
+        "--extract",
+        dest="directory",
+        required=True,
+        metavar="DIR",
+        help="destination directory",
+    )
+    examples.set_defaults(handler=command_examples)
     return parser
 
 
