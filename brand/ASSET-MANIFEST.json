@@ -10,6 +10,7 @@
     "govp-favicon.svg": { "sha256": "c19deb9e994e220f4109fa241d34cf084906c7bed1d78c438952096acc63cb1c", "width": 64, "height": 64 },
     "govp-flow.png": { "sha256": "42e03131f198b77fa3fd119a44493e00072585cb8f1b5dc650d712e976da6d04", "width": 1200, "height": 300 },
     "govp-flow.svg": { "sha256": "96914dee3b92bb66e74d34d5e8b443aefeffd98f8a840fd564b31f0dda6a3689", "width": 1200, "height": 300 },
+    "govp-integrity-demo.svg": { "sha256": "070799aec77fe812a48997c8feca720ed9b292598a90eda74e36a7da15451d79", "width": 1200, "height": 360 },
     "govp-mark-monochrome.svg": { "sha256": "2e01ed3fbbe4aa59de26a1df1cc4fc7818eb3e1d4ceaf47bb0ba630444c69805", "width": 96, "height": 96 },
     "govp-mark.svg": { "sha256": "e390aa2cf6d4f78cf53fc800770d9394afe373059a6a431e63b3b9a17bef5e40", "width": 96, "height": 96 },
     "govp-org-header.png": { "sha256": "a773bcce4603c246f6a959b5188223a528e793745c3553e8675bc92e8c6c1171", "width": 1200, "height": 360 },
