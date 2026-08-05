@@ -73,9 +73,15 @@ discard signed data.
 Python 3.10 or newer is required for the reference implementation.
 
 ```bash
-git clone https://github.com/govp-protocol/govp.git
+python -m pip install govp
+govp self-test
+```
+
+To verify the repository's signed synthetic fixture:
+
+```bash
+git clone --depth 1 https://github.com/govp-protocol/govp.git
 cd govp
-python -m pip install .
 govp verify examples/manufacturing-record.govp.txt \
   --asset examples/manufacturing-record.statement.txt
 ```
