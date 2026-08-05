@@ -26,6 +26,7 @@ jobs:
       - run: pytest --strict-config --strict-markers
       - run: govp self-test
       - run: govp conformance --run
+      - run: govp status-conformance --run
       - run: govp verify examples/manufacturing-record.govp.txt --asset examples/manufacturing-record.statement.txt
 
   minimum-dependencies:
@@ -54,6 +55,7 @@ jobs:
           PY
       - run: pytest --strict-config --strict-markers
       - run: govp conformance --run
+      - run: govp status-conformance --run
 
   quality:
     runs-on: ubuntu-latest
@@ -84,7 +86,9 @@ jobs:
         run: |
           python -m json.tool conformance/vectors.json >/dev/null
           python -m json.tool conformance/json-vectors.json >/dev/null
+          python -m json.tool conformance/status-vectors.json >/dev/null
           python -m json.tool schema/govp-1.schema.json >/dev/null
+          python -m json.tool schema/govp-status-1.schema.json >/dev/null
           python - <<'PY'
           import pathlib
           import tomllib
@@ -105,6 +109,7 @@ jobs:
           wheel-test/bin/python -m pip install dist/*.whl
           wheel-test/bin/govp self-test
           wheel-test/bin/govp conformance --run
+          wheel-test/bin/govp status-conformance --run
           wheel-test/bin/govp examples --extract wheel-examples
           wheel-test/bin/govp verify wheel-examples/manufacturing-record.govp.txt \
             --asset wheel-examples/manufacturing-record.statement.txt

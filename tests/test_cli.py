@@ -3,6 +3,8 @@ from argparse import Namespace
 from pathlib import Path
 
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from govp import cli
 
@@ -113,6 +115,29 @@ def test_fetch_tolerates_invalid_content_length_header(monkeypatch):
     assert text == "Version: GOVP-1\n"
 
 
+def test_fetch_uses_certifi_by_default_and_explicit_ca_bundle(monkeypatch, tmp_path):
+    selected = []
+    monkeypatch.setattr(
+        cli.ssl,
+        "create_default_context",
+        lambda **kwargs: selected.append(kwargs["cafile"]) or object(),
+    )
+    monkeypatch.setattr(
+        cli,
+        "build_opener",
+        lambda *_: FakeOpener(FakeResponse(b"Version: GOVP-1\n")),
+    )
+    custom = tmp_path / "enterprise-ca.pem"
+    custom.write_text("test CA placeholder", encoding="utf-8")
+
+    cli._fetch("https://example.test/.well-known/govp.txt")
+    cli._fetch(
+        "https://example.test/.well-known/govp.txt", ca_bundle=custom
+    )
+
+    assert selected == [cli.certifi.where(), str(custom)]
+
+
 def test_verify_url_binds_to_final_redirect_url(monkeypatch, capsys):
     record = (ROOT / "examples/manufacturing-record.govp.txt").read_text(
         encoding="utf-8"
@@ -120,11 +145,15 @@ def test_verify_url_binds_to_final_redirect_url(monkeypatch, capsys):
     monkeypatch.setattr(
         cli,
         "_fetch",
-        lambda _: (record, "https://redirected.example/record"),
+        lambda _, **__: (record, "https://redirected.example/record"),
     )
 
     exit_code = cli.command_verify_url(
-        Namespace(url="https://govp.io/.well-known/govp.txt", json=True)
+        Namespace(
+            url="https://govp.io/.well-known/govp.txt",
+            ca_bundle=None,
+            json=True,
+        )
     )
     payload = capsys.readouterr().out
 
@@ -185,6 +214,11 @@ def test_bundled_conformance_and_example_extraction(tmp_path, capsys):
     assert "GOVP conformance: PASS" in output
     assert "18/18 vectors" in output
 
+    assert cli.command_status_conformance(Namespace(run=True)) == 0
+    output = capsys.readouterr().out
+    assert "GOVP-STATUS-1 conformance: PASS" in output
+    assert "3/3 vectors" in output
+
     destination = tmp_path / "govp-examples"
     assert cli.command_examples(Namespace(directory=str(destination))) == 0
     output = capsys.readouterr().out
@@ -214,6 +248,59 @@ def test_example_extraction_refuses_to_overwrite_different_file(tmp_path):
 
     with pytest.raises(ValueError, match="refusing to overwrite"):
         cli.command_examples(Namespace(directory=str(destination)))
+
+
+def test_issue_command_creates_new_verified_record_without_overwrite(tmp_path, capsys):
+    asset = tmp_path / "release.txt"
+    asset.write_text("synthetic release\n", encoding="utf-8")
+    private_key = tmp_path / "issuer-private.pem"
+    private_key.write_bytes(
+        Ed25519PrivateKey.generate().private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    private_key.chmod(0o600)
+    output = tmp_path / "release.govp"
+    args = Namespace(
+        asset=str(asset),
+        canonical="https://example.test/.well-known/govp/{govp-id}.govp",
+        publisher="Example issuer",
+        asset_type="document",
+        asset_id="example/release",
+        evidence="https://example.test/release.txt",
+        private_key=str(private_key),
+        profile="GOVP-BASIC",
+        license="Apache-2.0",
+        generated_at="2026-08-05T00:00:00Z",
+        output=str(output),
+    )
+
+    assert cli.command_issue(args) == 0
+    record = cli.load_record(output)
+    assert cli.verify(record, asset_bytes=asset.read_bytes()).ok is True
+    assert record["canonical"].endswith(f"/{record['govp-id']}.govp")
+    assert "Wrote GOVP-DOC-" in capsys.readouterr().out
+    with pytest.raises(FileExistsError):
+        cli.command_issue(args)
+
+
+def test_issue_command_rejects_private_key_with_broad_permissions(tmp_path):
+    if cli.os.name == "nt":
+        pytest.skip("POSIX file mode check")
+    private_key = tmp_path / "issuer-private.pem"
+    private_key.write_bytes(
+        Ed25519PrivateKey.generate().private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    private_key.chmod(0o644)
+
+    with pytest.raises(ValueError, match="chmod 600"):
+        cli._load_private_key(private_key)
 
 
 def test_main_reports_expected_user_errors(monkeypatch, capsys):

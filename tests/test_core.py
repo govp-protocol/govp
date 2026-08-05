@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 import govp
@@ -11,7 +12,9 @@ from govp.core import (
     normalize_canonical,
     normalize_field_name,
     parse_record,
+    serialize_record,
     sha256,
+    sign_record,
     signing_input,
     verify,
 )
@@ -31,6 +34,48 @@ def test_top_level_api_exports_stable_verifier_contract():
         fields["asset-type"], fields["asset-id"], fields["asset-sha256"]
     ) == fields["govp-id"]
     assert govp.signing_input(fields) == signing_input(fields)
+
+
+def test_load_record_accepts_string_and_pathlike_values():
+    record = ROOT / "examples/manufacturing-record.govp.txt"
+
+    assert load_record(str(record)) == load_record(record)
+
+
+def test_sign_and_serialize_public_api_round_trip():
+    asset = b"synthetic release evidence\n"
+    fields = {
+        "canonical": "https://example.test/.well-known/govp.txt",
+        "publisher": "Example issuer",
+        "asset-type": "document",
+        "asset-id": "example/release-1",
+        "asset-sha256": sha256(asset),
+        "profile": "GOVP-BASIC",
+        "generated-at": "2026-08-05T00:00:00Z",
+        "evidence": "https://example.test/release-1.txt",
+    }
+
+    record = sign_record(fields, Ed25519PrivateKey.generate())
+    rendered = serialize_record(record)
+    loaded = parse_record(rendered)
+
+    assert loaded == record
+    assert verify(loaded, asset_bytes=asset).ok is True
+    assert rendered.startswith("Version: GOVP-1\nCanonical: https://")
+
+
+def test_sign_record_rejects_computed_fields_and_wrong_key_type():
+    fields = {
+        "asset-type": "document",
+        "asset-id": "example",
+        "asset-sha256": "0" * 64,
+        "govp-id": "GOVP-DOC-000000000000",
+    }
+
+    with pytest.raises(ValueError, match="computed"):
+        sign_record(fields, Ed25519PrivateKey.generate())
+    with pytest.raises(TypeError, match="Ed25519PrivateKey"):
+        sign_record({}, object())  # type: ignore[arg-type]
 
 
 def test_all_conformance_vectors():

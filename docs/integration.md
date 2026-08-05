@@ -14,6 +14,8 @@ cryptographic verification and business policy as separate decisions.
    binding.
 6. Apply local policy to advisory warnings and evidence URL schemes.
 7. Store the original record, result and asset digest for auditability.
+8. When current authorization matters, fetch and evaluate GOVP-STATUS-1 from
+   the same HTTPS origin; never convert an unavailable status into trusted.
 
 ## Python API
 
@@ -63,9 +65,12 @@ Warnings do not change core validity. A deployment may reject them as policy.
 
 ## Public API compatibility
 
-The supported top-level API is `verify`, `parse_record`, `load_record`,
-`derive_govp_id`, `signing_input`, `Verification` and its descriptive alias
-`VerifyResult`. Semantic-versioning decisions apply to these exported names.
+The supported top-level API also includes `sign_record`, `serialize_record`,
+`parse_status`, `load_status`, `derive_key_id`, `evaluate_status` and
+`StatusResult`. The core verifier exports remain `verify`, `parse_record`,
+`load_record`, `derive_govp_id`, `signing_input`, `Verification` and its
+descriptive alias `VerifyResult`. Semantic-versioning decisions apply to these
+exported names.
 
 Imports from `govp.core` remain supported throughout the 0.1.x line for
 compatibility. Integrations should use the top-level API so implementation
@@ -94,6 +99,19 @@ The reference `verify-url` command caps remote records at 1 MiB and uses a
 15-second request timeout. Services should also limit local uploads, asset
 size, redirect count, concurrency and stored-result retention according to
 their own threat model.
+
+Network commands use Certifi unless `--ca-bundle PEM` is supplied explicitly.
+They do not inherit `SSL_CERT_FILE` or `REQUESTS_CA_BUNDLE`. An approved
+enterprise transport can download a record for offline `govp verify`; canonical
+and live-status checks then remain not evaluated.
+
+## Issuance and status
+
+Use the [issuance guide](issuing.md) and exported `sign_record` API instead of
+reimplementing the signing input. Use the independently versioned
+[GOVP-STATUS-1 extension](../extensions/status-1/GOVP-STATUS-1.md) and
+[key lifecycle procedure](key-lifecycle.md) for online authorization,
+revocation and rotation.
 
 ## Compatibility
 

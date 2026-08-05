@@ -18,6 +18,7 @@ python -m venv .venv
 python -m pip install govp
 govp self-test
 govp conformance --run
+govp status-conformance --run
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`.
@@ -55,6 +56,22 @@ Remote verification accepts HTTPS only, follows HTTPS redirects, caps the
 record at 1 MiB, requires valid UTF-8 and binds the final response URL to the
 signed `canonical` value. It does not download or execute the evidence URL.
 
+For enterprise or private PKI, select the approved trust store explicitly with
+`--ca-bundle PEM`. Network commands intentionally ignore ambient CA variables.
+
+## Evaluate current status
+
+```bash
+govp status-url https://govp.io/.well-known/govp.txt \
+  --status-url https://govp.io/.well-known/govp/revoked.json \
+  --json
+```
+
+This separately requires a live same-origin GOVP-STATUS-1 document, an active
+matching key and no explicit record revocation. A downloaded status file can be
+evaluated as a snapshot with `govp status RECORD STATUS`, but it cannot produce
+`currently_trusted=true`.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -65,6 +82,8 @@ signed `canonical` value. It does not download or execute the evidence URL.
 
 Continue with the [integration guide](integration.md) for application use and
 the [security model](security-model.md) before exposing results to end users.
+To publish records, use the reviewed [issuance guide](issuing.md) rather than
+reconstructing the signing input.
 
 ## Development and independent audit
 
@@ -72,7 +91,7 @@ Clone the repository only when developing GOVP, running the complete source
 test suite or auditing the exact release tree:
 
 ```bash
-git clone --branch v0.1.9 --depth 1 https://github.com/govp-protocol/govp.git
+git clone --branch v0.1.10 --depth 1 https://github.com/govp-protocol/govp.git
 cd govp
 python -m pip install -r requirements-test.txt
 python -m pip install .

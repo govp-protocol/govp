@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import ssl
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import (
     HTTPRedirectHandler,
@@ -15,18 +17,27 @@ from urllib.request import (
 )
 
 import certifi
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from . import __version__
-from ._bundled import extract_bundled_examples, run_bundled_conformance
+from ._bundled import (
+    extract_bundled_examples,
+    run_bundled_conformance,
+    run_bundled_status_conformance,
+)
 from .core import (
     _valid_absolute_url,
     derive_govp_id,
     load_record,
     parse_record,
+    serialize_record,
     sha256,
+    sign_record,
     signing_input,
     verify,
 )
+from .status import StatusResult, evaluate_status, load_status, parse_status
 
 MAX_RECORD_BYTES = 1024 * 1024
 
@@ -42,13 +53,16 @@ class _HTTPSOnlyRedirectHandler(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def _fetch(url: str) -> tuple[str, str]:
+def _fetch(url: str, *, ca_bundle: str | Path | None = None) -> tuple[str, str]:
     _require_https_url(url)
     request = Request(url, headers={"User-Agent": f"govp/{__version__}"})
     # Standalone PyInstaller binaries cannot rely on the host Python's CA
     # location. certifi supplies the same explicit trust store on every
     # supported platform and is bundled into the executable.
-    context = ssl.create_default_context(cafile=certifi.where())
+    # Environment-controlled CA variables are intentionally not read. The
+    # caller must opt in to an enterprise/private trust store explicitly.
+    cafile = str(ca_bundle) if ca_bundle is not None else certifi.where()
+    context = ssl.create_default_context(cafile=cafile)
     opener = build_opener(_HTTPSOnlyRedirectHandler(), HTTPSHandler(context=context))
     with opener.open(request, timeout=15) as response:
         final_url = response.geturl()
@@ -107,11 +121,126 @@ def command_verify(args: argparse.Namespace) -> int:
 
 
 def command_verify_url(args: argparse.Namespace) -> int:
-    text, final_url = _fetch(args.url)
+    text, final_url = _fetch(args.url, ca_bundle=args.ca_bundle)
     fields = parse_record(text)
     result = verify(fields, fetched_url=final_url)
     _print_result(result, args.json)
     return 0 if result.ok else 1
+
+
+STATUS_CHECK_NAMES = (
+    "core",
+    "status-format",
+    "status-canonical",
+    "same-origin",
+    "key-active",
+    "record-not-revoked",
+)
+
+
+def _tri_state(value: bool | None) -> bool | None:
+    if value is True:
+        return True
+    if value is False:
+        return False
+    return None
+
+
+def _print_status(result: StatusResult, as_json: bool) -> None:
+    checks = {
+        name: _tri_state(result.checks.get(name)) for name in STATUS_CHECK_NAMES
+    }
+    payload = {
+        "currently_trusted": _tri_state(result.currently_trusted),
+        "snapshot_trusted": result.snapshot_trusted is True,
+        "checks": checks,
+        "reasons": [name for name, value in checks.items() if value is False],
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    if result.currently_trusted is None:
+        label = "SNAPSHOT VALID" if result.snapshot_trusted else "SNAPSHOT INVALID"
+    else:
+        label = "CURRENTLY TRUSTED" if result.currently_trusted else "NOT TRUSTED"
+    print("GOVP status:", label)
+    for name, value in checks.items():
+        check = "not checked" if value is None else ("pass" if value else "FAIL")
+        print(f"  {name:<20} {check}")
+
+
+def command_status(args: argparse.Namespace) -> int:
+    fields = load_record(args.record)
+    status = load_status(args.status)
+    result = evaluate_status(fields, status)
+    _print_status(result, args.json)
+    return 0 if result.snapshot_trusted else 1
+
+
+def command_status_url(args: argparse.Namespace) -> int:
+    record_text, record_final_url = _fetch(
+        args.record_url, ca_bundle=args.ca_bundle
+    )
+    status_text, status_final_url = _fetch(
+        args.status_url, ca_bundle=args.ca_bundle
+    )
+    result = evaluate_status(
+        parse_record(record_text),
+        parse_status(status_text),
+        fetched_url=status_final_url,
+        record_fetched_url=record_final_url,
+    )
+    _print_status(result, args.json)
+    return 0 if result.currently_trusted is True else 1
+
+
+def _load_private_key(path: Path) -> Ed25519PrivateKey:
+    if os.name != "nt" and path.stat().st_mode & 0o077:
+        raise ValueError(
+            f"private key permissions are too broad: {path} (use chmod 600)"
+        )
+    key = serialization.load_pem_private_key(path.read_bytes(), password=None)
+    if not isinstance(key, Ed25519PrivateKey):
+        raise TypeError("private key must be an Ed25519 PKCS8 PEM key")
+    return key
+
+
+def command_issue(args: argparse.Namespace) -> int:
+    asset_path = Path(args.asset)
+    asset = asset_path.read_bytes()
+    asset_sha256 = sha256(asset)
+    govp_id = derive_govp_id(args.asset_type, args.asset_id, asset_sha256)
+    if govp_id is None:
+        raise ValueError("asset-type must be a registered GOVP-1 type")
+    canonical = args.canonical.replace("{govp-id}", govp_id)
+    generated_at = args.generated_at or datetime.now(timezone.utc).isoformat(
+        timespec="seconds"
+    ).replace("+00:00", "Z")
+    fields = {
+        "version": "GOVP-1",
+        "canonical": canonical,
+        "publisher": args.publisher,
+        "asset-type": args.asset_type,
+        "asset-id": args.asset_id,
+        "asset-sha256": asset_sha256,
+        "profile": args.profile,
+        "generated-at": generated_at,
+        "evidence": args.evidence,
+    }
+    if args.license:
+        fields["license"] = args.license
+    record = sign_record(fields, _load_private_key(Path(args.private_key)))
+    if not verify(record, asset_bytes=asset).ok:
+        raise ValueError("issued record did not verify against the supplied asset")
+    output = serialize_record(record)
+    if args.output == "-":
+        sys.stdout.write(output)
+    else:
+        destination = Path(args.output)
+        with destination.open("x", encoding="utf-8", newline="\n") as handle:
+            handle.write(output)
+        print(f"Wrote {record['govp-id']} to {destination}")
+    return 0
 
 
 def command_inspect(args: argparse.Namespace) -> int:
@@ -188,6 +317,18 @@ def command_conformance(_: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def command_status_conformance(_: argparse.Namespace) -> int:
+    result = run_bundled_status_conformance()
+    print(
+        "GOVP-STATUS-1 conformance:",
+        "PASS" if result.ok else "FAIL",
+        f"({result.passed}/{result.total} vectors)",
+    )
+    for failure in result.failures:
+        print(f"  FAIL {failure}")
+    return 0 if result.ok else 1
+
+
 def command_examples(args: argparse.Namespace) -> int:
     extracted = extract_bundled_examples(Path(args.directory))
     print(f"Extracted {len(extracted)} synthetic GOVP examples to {args.directory}")
@@ -209,8 +350,57 @@ def build_parser() -> argparse.ArgumentParser:
 
     url_parser = sub.add_parser("verify-url", help="fetch and verify a GOVP-1 record")
     url_parser.add_argument("url")
+    url_parser.add_argument(
+        "--ca-bundle",
+        metavar="PEM",
+        help="explicit CA bundle for enterprise/private HTTPS (Certifi by default)",
+    )
     url_parser.add_argument("--json", action="store_true")
     url_parser.set_defaults(handler=command_verify_url)
+
+    status_parser = sub.add_parser(
+        "status", help="evaluate a local GOVP-STATUS-1 snapshot"
+    )
+    status_parser.add_argument("record")
+    status_parser.add_argument("status")
+    status_parser.add_argument("--json", action="store_true")
+    status_parser.set_defaults(handler=command_status)
+
+    status_url_parser = sub.add_parser(
+        "status-url", help="fetch a GOVP-1 record and its live status over HTTPS"
+    )
+    status_url_parser.add_argument("record_url")
+    status_url_parser.add_argument("--status-url", required=True)
+    status_url_parser.add_argument(
+        "--ca-bundle",
+        metavar="PEM",
+        help="explicit CA bundle for enterprise/private HTTPS (Certifi by default)",
+    )
+    status_url_parser.add_argument("--json", action="store_true")
+    status_url_parser.set_defaults(handler=command_status_url)
+
+    issue_parser = sub.add_parser(
+        "issue", help="issue a GOVP-1 record for an exact local asset"
+    )
+    issue_parser.add_argument("--asset", required=True)
+    issue_parser.add_argument("--canonical", required=True)
+    issue_parser.add_argument("--publisher", required=True)
+    issue_parser.add_argument("--asset-type", required=True, choices=sorted({
+        "agent", "benchmark", "dataset", "document", "model", "pipeline"
+    }))
+    issue_parser.add_argument("--asset-id", required=True)
+    issue_parser.add_argument("--evidence", required=True)
+    issue_parser.add_argument("--private-key", required=True, metavar="PEM")
+    issue_parser.add_argument("--profile", default="GOVP-BASIC")
+    issue_parser.add_argument("--license")
+    issue_parser.add_argument("--generated-at")
+    issue_parser.add_argument(
+        "--output",
+        default="-",
+        metavar="RECORD",
+        help="new output path, or - for stdout (existing files are never overwritten)",
+    )
+    issue_parser.set_defaults(handler=command_issue)
 
     inspect_parser = sub.add_parser("inspect", help="show parsed fields and deterministic inputs")
     inspect_parser.add_argument("record")
@@ -237,6 +427,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     conformance.set_defaults(handler=command_conformance)
 
+    status_conformance = sub.add_parser(
+        "status-conformance",
+        help="run the GOVP-STATUS-1 vectors bundled with GOVP",
+    )
+    status_conformance.add_argument(
+        "--run",
+        action="store_true",
+        required=True,
+        help="execute all bundled status vectors",
+    )
+    status_conformance.set_defaults(handler=command_status_conformance)
+
     examples = sub.add_parser("examples", help="extract bundled synthetic examples")
     examples.add_argument(
         "--extract",
@@ -254,6 +456,6 @@ def main() -> int:
     args = parser.parse_args()
     try:
         return args.handler(args)
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, TypeError, ValueError, KeyError) as error:
         print(f"govp: {error}", file=sys.stderr)
         return 2

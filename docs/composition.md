@@ -72,7 +72,7 @@ wire format or cause GOVP to inherit the other system's guarantees.
 
 ## Implementation status
 
-The GOVP 0.1.9 reference verifier validates GOVP-1 records and their binding to
+The GOVP 0.1.10 reference verifier validates GOVP-1 records and their binding to
 supplied asset bytes. It does not include native SCITT, COSE, DSSE, in-toto,
 Sigstore, Verifiable Credentials or C2PA verifiers. Applications must invoke
 the relevant implementation and policy engine explicitly. Future governed

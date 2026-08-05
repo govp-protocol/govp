@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "govp"
-version = "0.1.9"
+version = "0.1.10"
 description = "Offline reference verifier for the GOVP open evidence protocol"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -53,6 +53,7 @@ packages = ["src/govp"]
 "schema" = "govp/_resources/schema"
 "conformance" = "govp/_resources/conformance"
 "examples" = "govp/_resources/examples"
+"extensions" = "govp/_resources/extensions"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -80,6 +81,8 @@ include = [
   "/schema",
   "/conformance",
   "/examples",
+  "/extensions",
+  "/audits",
   "/tests",
 ]
 

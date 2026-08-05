@@ -74,7 +74,7 @@ discard signed data.
 Python 3.10 or newer is required for the reference implementation.
 
 ```bash
-python -m pip install govp
+python -m pip install govp==0.1.10
 govp self-test
 govp conformance --run
 ```
@@ -162,6 +162,17 @@ persistence, display escaping and their own trust policy. See the
 [integration guide](https://govp.io/govp/integration.html) for the complete
 result contract.
 
+Evaluate the protocol's live key and revocation status separately:
+
+```bash
+govp status-url https://govp.io/.well-known/govp.txt \
+  --status-url https://govp.io/.well-known/govp/revoked.json
+```
+
+Offline integrity remains available when the status service is unavailable;
+only a current same-origin HTTPS fetch can produce `currently_trusted=true`.
+See [GOVP-STATUS-1](https://github.com/govp-protocol/govp/blob/main/extensions/status-1/GOVP-STATUS-1.md).
+
 ## What GOVP proves — and what it does not
 
 | A valid result establishes | A valid result does not establish |
@@ -169,7 +180,7 @@ result contract.
 | The GOVP record has a valid signature from its included public key | The legal identity or authority behind that key |
 | The GOVP-ID matches the declared artifact identity | That a signed statement is factually true |
 | Supplied artifact bytes match the signed SHA-256 digest | Independent existence time or timestamp anchoring |
-| A remotely fetched record ended at its signed canonical HTTPS URL | Revocation, current authorization or continued availability |
+| A remotely fetched record ended at its signed canonical HTTPS URL | Current authorization unless GOVP-STATUS-1 is also evaluated |
 
 GOVP deliberately separates cryptographic verification from identity,
 certification and business-policy decisions. Deployments can add PKI,
@@ -216,8 +227,9 @@ normative text and published vectors, not by matching Python internals.
 
 | Language/runtime | Project | Status |
 |---|---|---|
-| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.9 |
-| Browser JavaScript | [`govp.io`](https://github.com/govp-protocol/govp.io) | Independent verification engine · GOVP-1 |
+| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.10 |
+| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://github.com/govp-protocol/govp-js) | Independent verifier · 0.1.0 |
+| Browser demo | [`govp.io`](https://github.com/govp-protocol/govp.io) | Interactive GOVP-1 verification |
 | Go | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Rust | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Other | [Read the conformance guide](https://govp.io/govp/conformance.html) | Welcome |
@@ -232,12 +244,12 @@ behavior.
 design.** Changes to signing inputs or wire behavior require explicit
 versioning, new conformance vectors and migration analysis.
 
-The current reference verifier is **0.1.9**. Download the
-[`v0.1.9` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.9)
+The current reference verifier is **0.1.10**. Download the
+[`v0.1.10` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.10)
 or verify its GitHub release attestation:
 
 ```bash
-gh release verify v0.1.9 --repo govp-protocol/govp
+gh release verify v0.1.10 --repo govp-protocol/govp
 ```
 
 The public [provenance manifest](https://govp.io/PROTOCOL-SOURCE.json) records
@@ -250,6 +262,8 @@ not redefine the GOVP-1 wire format.
 - `spec/` — normative and concise protocol text
 - `schema/` — machine-readable record and bundle schema
 - `conformance/` — byte-exact text and JSON vectors
+- `extensions/` — independently versioned protocol extensions such as status
+- `audits/` — hash-bound external review evidence with explicit limitations
 - `src/govp/` — Python reference verifier and CLI
 - `examples/` — valid signed records with fully synthetic content
 - `tests/` — protocol, transport and CLI regression tests

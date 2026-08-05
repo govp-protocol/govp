@@ -340,6 +340,13 @@ TABLE OF CONTENTS
       /.well-known/govp/index.json   discovery index of published records
       /.well-known/govp/<id>.govp    each record, self-contained
 
+   The canonical field of every remotely verified record MUST name the
+   exact final URL from which that record is retrieved. Therefore
+   /.well-known/govp.txt is canonical for the domain identity record, while
+   a record published at /.well-known/govp/<id>.govp names that exact URL.
+   A byte-for-byte copy retaining a different canonical remains verifiable
+   offline but fails the conditional canonical-binding check at the copy URL.
+
    Read endpoints SHOULD be served with "Access-Control-Allow-Origin: *":
    evidence is public and must verify from any origin. Records SHOULD be
    served as text/plain; charset=utf-8.
