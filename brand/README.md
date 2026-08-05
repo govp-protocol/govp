@@ -23,6 +23,7 @@ cryptographic integrity; it does not certify truth or institutional identity.
 | `govp-org-header.svg` / `.png` | GitHub organization profile header |
 | `govp-social-preview.svg` / `.png` | Repository and link preview at 1280 × 640 |
 | `govp-flow.svg` / `.png` | Explanatory “Sign → Distribute → Verify” diagram |
+| `govp-integrity-demo.svg` | README comparison of an exact artifact and a modified copy |
 
 SVG files are the editable masters. PNG files are deterministic renders for
 services that do not accept SVG. [`ASSET-MANIFEST.json`](ASSET-MANIFEST.json)

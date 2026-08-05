@@ -71,9 +71,19 @@ def test_json_schema_validates_canonical_record_and_bundle():
 def test_asset_binding():
     record = ROOT / "examples/manufacturing-record.govp.txt"
     asset = (ROOT / "examples/manufacturing-record.statement.txt").read_bytes()
+    tampered_asset = (
+        ROOT / "examples/manufacturing-record.tampered.statement.txt"
+    ).read_bytes()
     fields = parse_record(record.read_text(encoding="utf-8"))
-    assert verify(fields, asset_bytes=asset).ok
-    assert not verify(fields, asset_bytes=asset + b"tampered").ok
+    valid = verify(fields, asset_bytes=asset)
+    invalid = verify(fields, asset_bytes=tampered_asset)
+
+    assert valid.ok
+    assert invalid.ok is False
+    assert invalid.checks["format"] is True
+    assert invalid.checks["signature"] is True
+    assert invalid.checks["govp-id"] is True
+    assert invalid.checks["asset"] is False
 
 
 def test_public_key_is_required_for_format():

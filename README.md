@@ -96,6 +96,37 @@ Verification is local. Neither the record nor the artifact is uploaded to
 GOVP. `canonical` is not checked in this example because the record was loaded
 from disk rather than fetched from its signed HTTPS location.
 
+## Break the artifact, break the binding
+
+The repository also includes a synthetic copy with one changed line. It uses
+the same signed GOVP record, so the record signature still passes, but the
+modified artifact bytes no longer match the signed SHA-256 digest.
+
+<p align="center">
+  <img alt="The original synthetic artifact passes GOVP verification while a one-line modification fails the asset SHA-256 check." src="brand/govp-integrity-demo.svg" width="960">
+</p>
+
+```bash
+govp verify examples/manufacturing-record.govp.txt \
+  --asset examples/manufacturing-record.tampered.statement.txt
+```
+
+Expected rejection:
+
+```text
+GOVP verification: INVALID
+  format       pass
+  signature    pass
+  govp-id      pass
+  canonical    not checked
+  asset        FAIL
+  record       GOVP-DOC-cb352d4b8a77
+```
+
+This failure does not mean the signed record was forged. It means the supplied
+artifact is not the exact artifact described by that record. The command exits
+with status `1`, making the same check usable in local workflows and CI.
+
 For machine-readable output, add `--json`. Exit code `0` means verification
 succeeded, `1` means the record was evaluated and is not valid, and `2` means
 the command or input could not be processed.
