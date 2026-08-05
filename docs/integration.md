@@ -15,6 +15,34 @@ cryptographic verification and business policy as separate decisions.
 6. Apply local policy to advisory warnings and evidence URL schemes.
 7. Store the original record, result and asset digest for auditability.
 
+## Composed evidence workflow
+
+The asset bound by `asset-sha256` is an opaque byte sequence. It can therefore
+be a SCITT statement or receipt, a COSE message, a DSSE envelope, an in-toto
+attestation or a Sigstore bundle. GOVP verifies the exact bytes; it does not
+interpret the upstream object's internal trust semantics.
+
+For composed evidence:
+
+1. Obtain the upstream evidence object and preserve its exact serialization.
+2. Supply those bytes as the GOVP asset and require `checks.asset` to pass.
+3. Run the upstream system's native verifier against the same bytes.
+4. Apply application policy to the combined results.
+5. Report the GOVP and upstream verdicts separately so that neither can be
+   mistaken for the other.
+
+In pseudocode:
+
+```text
+govp_valid = verify_govp(record, upstream_bytes)
+source_valid = verify_with_native_system(upstream_bytes)
+accepted = govp_valid AND source_valid AND local_policy_allows(result)
+```
+
+A GOVP-valid result is not, by itself, a valid SCITT, COSE, DSSE, in-toto or
+Sigstore result. See the [composition guide](composition.md) for system-specific
+boundaries and primary references.
+
 ## Python API
 
 ```python

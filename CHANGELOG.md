@@ -3,6 +3,15 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## Unreleased
+
+- replace the technology-comparison guide with a composition model for SCITT,
+  COSE, DSSE, in-toto, Sigstore, Verifiable Credentials and C2PA;
+- separate GOVP validity, native upstream verification and application-policy
+  decisions explicitly;
+- clarify that this documentation change does not add upstream verifiers or
+  alter the frozen GOVP-1 wire format.
+
 ## 0.1.8 — 2026-08-04
 
 - make RFC 3339 fractional-second validation identical on Python 3.10 through

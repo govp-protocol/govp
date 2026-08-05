@@ -167,22 +167,26 @@ certification and business-policy decisions. Deployments can add PKI,
 registries, transparency logs, witnesses or timestamp authorities where those
 properties are required.
 
-## Where GOVP fits
+## Compose GOVP with your evidence stack
 
-GOVP is intentionally narrower than several established technologies:
+GOVP does not replace signing, attestation or transparency infrastructure. It
+can bind the exact bytes produced by those systems and keep that evidence
+portable outside the service or workflow that created it.
 
-- **W3C Verifiable Credentials** model claims issued about subjects and their
-  presentation between issuers, holders and verifiers.
-- **C2PA Content Credentials** capture rich provenance and history for digital
-  content through manifests, assertions and content bindings.
-- **Sigstore** secures software supply chains with identity-bound signing,
-  short-lived certificates and transparency logs.
-- **GOVP** binds a small, portable signed record to exact artifact bytes with
-  deterministic, service-independent verification.
+- a **SCITT** signed statement or receipt can be a GOVP-bound artifact;
+- a **COSE** message or **DSSE** envelope can be preserved byte for byte;
+- an **in-toto** attestation or bundle can travel with a GOVP record;
+- a **Sigstore** bundle can be retained as exact release evidence; and
+- **Verifiable Credentials** and **C2PA** objects can be bound when their native
+  models provide the identity, claims or provenance layer.
 
-They solve different trust problems and can be complementary. Read
-[How GOVP fits](docs/comparison.md) for a neutral selection guide and links to
-the specifications of each project.
+These are complementary layers, not equivalent alternatives. GOVP verifies
+its own record and its binding to the supplied bytes. The native verifier for
+each upstream system remains responsible for its internal signatures,
+certificates, receipts, predicates, identities and policy.
+
+Read [Composing GOVP with evidence ecosystems](docs/composition.md) for the
+layered verification model, integration workflow and primary specifications.
 
 ## Use cases
 
