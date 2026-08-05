@@ -172,4 +172,12 @@ jobs:
           )
           gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --generate-notes --title "GOVP $version" "${release_assets[@]}"
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
-          gh release verify "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+          for attempt in {1..12}; do
+            if gh release verify "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"; then
+              exit 0
+            fi
+            echo "Release attestation is not visible yet (attempt $attempt/12); retrying in 5 seconds."
+            sleep 5
+          done
+          echo "Release attestation did not become visible within 60 seconds." >&2
+          exit 1

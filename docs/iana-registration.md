@@ -9,8 +9,9 @@ media types have passed release validation.
 - URI suffix: `govp.txt`
 - Change controller: Gemacode (Brilyetz Holding S.L.),
   `research@gemacode.org`, `https://govp.io`
-- Specification document: `https://govp.io/govp/spec/govp-1.html`, sections 4,
-  10.3, 11 and 12
+- Specification document: `https://github.com/govp-protocol/govp/blob/v0.1.10/spec/GOVP-1.md`,
+  sections 4, 10.3, 11 and 12; web rendering:
+  `https://govp.io/govp/spec/govp-1.html`
 - Status: provisional
 - Related information: `https://govp.io/govp/security.html`
 
@@ -24,8 +25,9 @@ security considerations.
 - URI suffix: `govp`
 - Change controller: Gemacode (Brilyetz Holding S.L.),
   `research@gemacode.org`, `https://govp.io`
-- Specification documents: `https://govp.io/govp/spec/govp-1.html`, section 11,
-  and `https://github.com/govp-protocol/govp/blob/main/extensions/status-1/GOVP-STATUS-1.md`
+- Specification documents:
+  `https://github.com/govp-protocol/govp/blob/v0.1.10/spec/GOVP-1.md`, section 11,
+  and `https://github.com/govp-protocol/govp/blob/v0.1.10/extensions/status-1/GOVP-STATUS-1.md`
 - Status: provisional
 - Related information: `https://govp.io/govp/docs.html`
 
