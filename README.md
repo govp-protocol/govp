@@ -228,7 +228,7 @@ normative text and published vectors, not by matching Python internals.
 | Language/runtime | Project | Status |
 |---|---|---|
 | Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.10 |
-| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://www.npmjs.com/package/@govp/verifier) ([source](https://github.com/govp-protocol/govp-js)) | Independent verifier · 0.1.2 |
+| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://www.npmjs.com/package/@govp/verifier/v/0.1.7) ([source](https://github.com/govp-protocol/govp-js), [signed release](https://github.com/govp-protocol/govp-js/releases/tag/v0.1.7)) | Independent verifier · 0.1.7 |
 | Browser demo | [`govp.io`](https://github.com/govp-protocol/govp.io) | Interactive GOVP-1 verification |
 | Go | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Rust | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
@@ -239,7 +239,7 @@ check and stop on specification ambiguity rather than choosing undocumented
 behavior.
 
 Install the independent JavaScript verifier with
-`npm install @govp/verifier`.
+`npm install @govp/verifier@0.1.7`.
 
 ## Stability and provenance
 
