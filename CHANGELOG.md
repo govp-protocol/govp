@@ -3,6 +3,19 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## 0.1.11 — 2026-08-06
+
+- require a recent GOVP-STATUS-1 `generated_at` value before returning
+  `currently_trusted=true`, with explicit maximum-age and future-skew policy;
+- add the unambiguous `snapshot_valid` status result while retaining
+  `snapshot_trusted` as a compatibility alias;
+- reject normalized or legacy-alias field-name collisions in JSON records and
+  bundles without changing the frozen text parser's last-value rule;
+- require canonical prime-subgroup Ed25519 public-key and signature point
+  encodings and a reduced signature scalar across supported runtimes;
+- add replay, clock-skew, collision and exceptional-point regressions while
+  keeping every published GOVP-1 signing input and identifier unchanged.
+
 ## 0.1.10 — 2026-08-05
 
 - accept `str` and all standard path-like values in the public `load_record`

@@ -5,7 +5,7 @@ binaries bundle a Python runtime and third-party components selected by the
 release workflow. Recipients should retain this notice with redistributed
 binaries.
 
-The v0.1.10 release toolchain directly selects:
+The v0.1.11 release toolchain directly selects:
 
 | Component | License |
 | --- | --- |

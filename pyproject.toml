@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "govp"
-version = "0.1.10"
+version = "0.1.11"
 description = "Offline reference verifier for the GOVP open evidence protocol"
 readme = "README.md"
 requires-python = ">=3.10"

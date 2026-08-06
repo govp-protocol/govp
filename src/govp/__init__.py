@@ -18,7 +18,7 @@ from .status import (
     parse_status,
 )
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 
 # Descriptive alias for integrations that prefer result-oriented naming.
 # Verification remains supported for compatibility with the 0.1.x API.

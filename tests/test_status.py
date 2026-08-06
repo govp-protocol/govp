@@ -1,5 +1,6 @@
 import hashlib
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -8,12 +9,20 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 from govp import (
     derive_key_id,
-    evaluate_status,
     load_status,
     sign_record,
 )
+from govp import (
+    evaluate_status as _evaluate_status,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
+NOW = datetime(2026, 8, 5, 0, 2, tzinfo=timezone.utc)
+
+
+def evaluate_status(*args, **kwargs):
+    kwargs.setdefault("now", NOW)
+    return _evaluate_status(*args, **kwargs)
 
 
 def make_record_and_status():
@@ -72,8 +81,42 @@ def test_offline_status_is_a_valid_snapshot_not_live_trust():
     result = evaluate_status(record, status)
 
     assert result.currently_trusted is None
+    assert result.snapshot_valid is True
     assert result.snapshot_trusted is True
     assert result.checks["status-canonical"] is None
+
+
+def test_live_status_rejects_stale_and_future_snapshots():
+    record, status = make_record_and_status()
+    options = {
+        "record_fetched_url": record["canonical"],
+        "fetched_url": status["canonical"],
+    }
+
+    status["generated_at"] = "2026-08-04T23:56:59Z"
+    stale = evaluate_status(record, status, **options)
+    assert stale.snapshot_valid is True
+    assert stale.currently_trusted is False
+    assert stale.checks["status-fresh"] is False
+
+    status["generated_at"] = "2026-08-05T00:03:01Z"
+    future = evaluate_status(record, status, **options)
+    assert future.snapshot_valid is True
+    assert future.currently_trusted is False
+    assert future.checks["status-fresh"] is False
+
+
+def test_status_freshness_window_is_explicitly_configurable():
+    record, status = make_record_and_status()
+    result = evaluate_status(
+        record,
+        status,
+        record_fetched_url=record["canonical"],
+        fetched_url=status["canonical"],
+        max_age_seconds=60,
+    )
+    assert result.currently_trusted is False
+    assert result.reasons == ("status-fresh",)
 
 
 @pytest.mark.parametrize("key_state", ["retired", "revoked"])

@@ -1,6 +1,6 @@
 # Issuing GOVP records
 
-Verification remains the safest integration boundary. GOVP 0.1.10 also exposes
+Verification remains the safest integration boundary. GOVP 0.1.11 also exposes
 an issuance path so adopters do not need to reconstruct the signing algorithm.
 
 ## Local CLI example

@@ -6,7 +6,7 @@ on:
       tag:
         description: "Existing signed release tag"
         required: true
-        default: "v0.1.10"
+        default: "v0.1.11"
         type: string
       confirmation:
         description: "Type release-govp to authorize immutable publication"

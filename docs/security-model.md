@@ -22,7 +22,8 @@ Core validity does not establish that:
 - a linked resource is safe to open or execute.
 
 GOVP-STATUS-1 can add a current same-origin HTTPS statement about active keys
-and revoked records. A saved status document is only a snapshot; it cannot
+and revoked records. Live trust additionally enforces a bounded
+`generated_at` age and future clock skew. A saved status document is only a snapshot; it cannot
 establish current trust.
 
 ## Trust boundaries

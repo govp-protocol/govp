@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-version="${GOVP_VERSION:-v0.1.10}"
+version="${GOVP_VERSION:-v0.1.11}"
 install_dir="${GOVP_INSTALL_DIR:-/usr/local/bin}"
 
 case "$(uname -s)" in

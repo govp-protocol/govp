@@ -72,6 +72,13 @@ The supported top-level API also includes `sign_record`, `serialize_record`,
 descriptive alias `VerifyResult`. Semantic-versioning decisions apply to these
 exported names.
 
+For status integrations, require `currently_trusted is True`. The
+`snapshot_valid` property only reports internal consistency of a saved status
+document and does not prove liveness. `snapshot_trusted` remains a deprecated
+0.1.x compatibility alias. The default live policy accepts a status document
+for 300 seconds with 60 seconds of future clock-skew tolerance; pass explicit
+`max_age_seconds` and `max_future_skew_seconds` values when policy is stricter.
+
 Imports from `govp.core` remain supported throughout the 0.1.x line for
 compatibility. Integrations should use the top-level API so implementation
 modules can evolve without expanding the public contract accidentally.

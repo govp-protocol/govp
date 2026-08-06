@@ -1,3 +1,4 @@
+import base64
 import json
 from pathlib import Path
 
@@ -156,6 +157,29 @@ def test_public_key_is_required_for_format():
     assert result.checks["format"] is False
     assert result.checks["signature"] is False
     assert result.ok is False
+
+
+def test_ed25519_exceptional_encodings_fail_closed():
+    record = ROOT / "examples/manufacturing-record.govp.txt"
+    fields = parse_record(record.read_text(encoding="utf-8"))
+    identity = bytes([1]) + bytes(31)
+    negative_zero = bytes([1]) + bytes(30) + bytes([0x80])
+    noncanonical_y = (2**255 - 19).to_bytes(32, "little")
+    order = 2**252 + 27742317777372353535851937790883648493
+
+    for public_key in (identity, negative_zero, noncanonical_y):
+        candidate = {**fields, "public-key": base64.b64encode(public_key).decode()}
+        assert verify(candidate).checks["signature"] is False
+
+    signature = base64.b64decode(fields["signature"])
+    identity_r = identity + signature[32:]
+    high_s = signature[:32] + order.to_bytes(32, "little")
+    for raw_signature in (identity_r, high_s):
+        candidate = {
+            **fields,
+            "signature": base64.b64encode(raw_signature).decode(),
+        }
+        assert verify(candidate).checks["signature"] is False
 
 
 def test_canonical_normalization_preserves_security_boundaries():
