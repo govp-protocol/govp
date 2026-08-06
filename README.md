@@ -74,7 +74,7 @@ discard signed data.
 Python 3.10 or newer is required for the reference implementation.
 
 ```bash
-python -m pip install govp==0.1.10
+python -m pip install govp==0.1.11
 govp self-test
 govp conformance --run
 ```
@@ -170,7 +170,10 @@ govp status-url https://govp.io/.well-known/govp.txt \
 ```
 
 Offline integrity remains available when the status service is unavailable;
-only a current same-origin HTTPS fetch can produce `currently_trusted=true`.
+only a same-origin HTTPS fetch with a `generated_at` value inside the default
+five-minute age and one-minute future-skew window can produce
+`currently_trusted=true`. A saved document can be `snapshot_valid` without
+being proof of current liveness.
 See [GOVP-STATUS-1](https://github.com/govp-protocol/govp/blob/main/extensions/status-1/GOVP-STATUS-1.md).
 
 ## What GOVP proves — and what it does not
@@ -227,8 +230,8 @@ normative text and published vectors, not by matching Python internals.
 
 | Language/runtime | Project | Status |
 |---|---|---|
-| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.10 |
-| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://www.npmjs.com/package/@govp/verifier/v/0.1.7) ([source](https://github.com/govp-protocol/govp-js), [signed release](https://github.com/govp-protocol/govp-js/releases/tag/v0.1.7)) | Independent verifier · 0.1.7 |
+| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.11 |
+| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://www.npmjs.com/package/@govp/verifier/v/0.1.8) ([source](https://github.com/govp-protocol/govp-js), [signed release](https://github.com/govp-protocol/govp-js/releases/tag/v0.1.8)) | Independent verifier · 0.1.8 |
 | Browser demo | [`govp.io`](https://github.com/govp-protocol/govp.io) | Interactive GOVP-1 verification |
 | Go | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Rust | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
@@ -239,7 +242,7 @@ check and stop on specification ambiguity rather than choosing undocumented
 behavior.
 
 Install the independent JavaScript verifier with
-`npm install @govp/verifier@0.1.7`.
+`npm install @govp/verifier@0.1.8`.
 
 ## Stability and provenance
 
@@ -247,12 +250,12 @@ Install the independent JavaScript verifier with
 design.** Changes to signing inputs or wire behavior require explicit
 versioning, new conformance vectors and migration analysis.
 
-The current reference verifier is **0.1.10**. Download the
-[`v0.1.10` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.10)
+The current reference verifier is **0.1.11**. Download the
+[`v0.1.11` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.11)
 or verify its GitHub release attestation:
 
 ```bash
-gh release verify v0.1.10 --repo govp-protocol/govp
+gh release verify v0.1.11 --repo govp-protocol/govp
 ```
 
 The public [provenance manifest](https://govp.io/PROTOCOL-SOURCE.json) records

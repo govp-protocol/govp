@@ -4,9 +4,9 @@
 
 | Version | Security support |
 | --- | --- |
-| 0.1.10 | Supported |
-| 0.1.9 | Security fixes only |
-| 0.1.8 and earlier | Upgrade to 0.1.10 |
+| 0.1.11 | Supported |
+| 0.1.10 | Upgrade to 0.1.11 |
+| 0.1.9 and earlier | Upgrade to 0.1.11 |
 
 Do not open a public issue for an exploitable vulnerability.
 
@@ -32,7 +32,7 @@ Python versions in CI. The Ed25519 API existing in an older release is not by
 itself sufficient support evidence: GOVP also requires a maintained security
 baseline, compatible wheels and consistent behavior across Python 3.10–3.14.
 
-The `cryptography>=50` floor is the reviewed baseline for GOVP 0.1.10. It may be
+The `cryptography>=50` floor is the reviewed baseline for GOVP 0.1.11. It may be
 lowered in a future release only after the proposed floor passes the complete
 test and vulnerability-review matrix. `certifi` supplies the explicit CA
 store used by bounded HTTPS verification and standalone binaries.
@@ -44,3 +44,8 @@ private-PKI users can opt in per invocation with `--ca-bundle PEM`. They can
 also download a record through their approved transport and use `govp verify`
 offline; offline canonical and current-status checks are reported as not
 evaluated, never as passed.
+
+GOVP-STATUS-1 current trust is fail-closed on freshness. The reference verifier
+accepts `generated_at` only within 300 seconds before evaluation and 60 seconds
+after it. Applications can make either non-negative window stricter. A saved
+document can be `snapshot_valid`, but it cannot establish current liveness.

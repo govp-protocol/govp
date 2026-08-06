@@ -35,12 +35,22 @@ conformance examples are in `conformance/vectors.json`.
 8. Prefix the bytes `GOVP::record.v1\0`.
 9. Sign or verify the result with Ed25519.
 
+Ed25519 point encodings for the public key and signature `R` component MUST be
+canonical and belong to the prime-order subgroup; the identity is rejected.
+The signature scalar `S` MUST be less than the Ed25519 subgroup order. These
+rules make exceptional-point verdicts identical across cryptographic runtimes.
+
 `canonical` is absolute HTTPS and `evidence` is an absolute URL. URL fields
 use visible ASCII RFC 3986 URI text; internationalized host names use IDNA and
 internationalized path data uses UTF-8 percent-encoding. If `generated-at` is
 present, it is an RFC 3339 UTC timestamp ending in `Z`. A fractional second,
 when present, contains one or more digits and has the same format verdict on
 every supported runtime.
+
+The optional JSON representation MUST reject two source names that normalize
+or alias to the same canonical field. This JSON rule prevents property-order
+ambiguity; the line-oriented text format retains its frozen last-occurrence
+wins rule.
 
 For online verification, `canonical` is the exact final HTTPS URL that serves
 that record. `/.well-known/govp.txt` is the domain identity record; a record

@@ -131,6 +131,7 @@ def command_verify_url(args: argparse.Namespace) -> int:
 STATUS_CHECK_NAMES = (
     "core",
     "status-format",
+    "status-fresh",
     "status-canonical",
     "same-origin",
     "key-active",
@@ -152,6 +153,8 @@ def _print_status(result: StatusResult, as_json: bool) -> None:
     }
     payload = {
         "currently_trusted": _tri_state(result.currently_trusted),
+        "snapshot_valid": result.snapshot_valid is True,
+        # Retained as a compatibility alias through the 0.1.x line.
         "snapshot_trusted": result.snapshot_trusted is True,
         "checks": checks,
         "reasons": [name for name, value in checks.items() if value is False],
@@ -160,7 +163,7 @@ def _print_status(result: StatusResult, as_json: bool) -> None:
         print(json.dumps(payload, indent=2, sort_keys=True))
         return
     if result.currently_trusted is None:
-        label = "SNAPSHOT VALID" if result.snapshot_trusted else "SNAPSHOT INVALID"
+        label = "SNAPSHOT VALID" if result.snapshot_valid else "SNAPSHOT INVALID"
     else:
         label = "CURRENTLY TRUSTED" if result.currently_trusted else "NOT TRUSTED"
     print("GOVP status:", label)
@@ -174,7 +177,7 @@ def command_status(args: argparse.Namespace) -> int:
     status = load_status(args.status)
     result = evaluate_status(fields, status)
     _print_status(result, args.json)
-    return 0 if result.snapshot_trusted else 1
+    return 0 if result.snapshot_valid else 1
 
 
 def command_status_url(args: argparse.Namespace) -> int:

@@ -212,7 +212,7 @@ def test_bundled_conformance_and_example_extraction(tmp_path, capsys):
     assert cli.command_conformance(Namespace(run=True)) == 0
     output = capsys.readouterr().out
     assert "GOVP conformance: PASS" in output
-    assert "18/18 vectors" in output
+    assert "19/19 vectors" in output
 
     assert cli.command_status_conformance(Namespace(run=True)) == 0
     output = capsys.readouterr().out

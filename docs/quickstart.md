@@ -70,7 +70,8 @@ govp status-url https://govp.io/.well-known/govp.txt \
 This separately requires a live same-origin GOVP-STATUS-1 document, an active
 matching key and no explicit record revocation. A downloaded status file can be
 evaluated as a snapshot with `govp status RECORD STATUS`, but it cannot produce
-`currently_trusted=true`.
+`currently_trusted=true`. Live evaluation also requires `generated_at` within
+the default 300-second maximum age and 60-second future clock-skew allowance.
 
 ## Exit codes
 
@@ -91,7 +92,7 @@ Clone the repository only when developing GOVP, running the complete source
 test suite or auditing the exact release tree:
 
 ```bash
-git clone --branch v0.1.10 --depth 1 https://github.com/govp-protocol/govp.git
+git clone --branch v0.1.11 --depth 1 https://github.com/govp-protocol/govp.git
 cd govp
 python -m pip install -r requirements-test.txt
 python -m pip install .

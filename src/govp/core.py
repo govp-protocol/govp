@@ -8,7 +8,7 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from os import PathLike
 from pathlib import Path
 from typing import Any
@@ -76,6 +76,14 @@ URI_ALLOWED_CHARS = frozenset(
     "-._~:/?#[]@!$&'()*+,;="
 )
 URI_HEX_DIGITS = frozenset("0123456789ABCDEFabcdef")
+
+# GOVP accepts only canonical, prime-subgroup Ed25519 encodings. Standard
+# RFC 8032 signers already emit these encodings; making the checks explicit
+# prevents runtime crypto backends from disagreeing on exceptional points.
+_ED25519_P = 2**255 - 19
+_ED25519_D = (-121665 * pow(121666, _ED25519_P - 2, _ED25519_P)) % _ED25519_P
+_ED25519_SQRT_M1 = pow(2, (_ED25519_P - 1) // 4, _ED25519_P)
+_ED25519_L = 2**252 + 27742317777372353535851937790883648493
 
 
 @dataclass(frozen=True)
@@ -173,9 +181,17 @@ def load_record(path: str | PathLike[str]) -> dict[str, str]:
             raise ValueError("JSON record field names and values must be strings")
         _validate_signable_fields(payload)
         fields = {}
+        normalized_sources: dict[str, str] = {}
         for key, value in payload.items():
             normalized_key = normalize_field_name(key)
             normalized = LEGACY.get(normalized_key, normalized_key)
+            if normalized in normalized_sources:
+                previous = normalized_sources[normalized]
+                raise ValueError(
+                    "JSON record contains colliding normalized field names: "
+                    f"{previous!r} and {key!r}"
+                )
+            normalized_sources[normalized] = key
             fields[normalized] = trim_field_value(value)
         _validate_signable_fields(fields)
         if bundle_asset is not None:
@@ -335,13 +351,86 @@ def derive_govp_id(asset_type: str, asset_id: str, asset_sha256: str) -> str | N
     return f"GOVP-{code}-{digest[:12]}"
 
 
+def _decode_ed25519_point(encoded: bytes) -> tuple[int, int, int, int] | None:
+    """Decode one canonical Edwards25519 point into extended coordinates."""
+    if len(encoded) != 32:
+        return None
+    sign = encoded[31] >> 7
+    y = int.from_bytes(encoded, "little") & ((1 << 255) - 1)
+    if y >= _ED25519_P:
+        return None
+    y_squared = y * y % _ED25519_P
+    denominator = (_ED25519_D * y_squared + 1) % _ED25519_P
+    if denominator == 0:
+        return None
+    x_squared = (y_squared - 1) * pow(
+        denominator, _ED25519_P - 2, _ED25519_P
+    ) % _ED25519_P
+    x = pow(x_squared, (_ED25519_P + 3) // 8, _ED25519_P)
+    if x * x % _ED25519_P != x_squared:
+        x = x * _ED25519_SQRT_M1 % _ED25519_P
+    if x * x % _ED25519_P != x_squared or (x == 0 and sign == 1):
+        return None
+    if x & 1 != sign:
+        x = _ED25519_P - x
+    return x, y, 1, x * y % _ED25519_P
+
+
+def _ed25519_add(
+    first: tuple[int, int, int, int],
+    second: tuple[int, int, int, int],
+) -> tuple[int, int, int, int]:
+    """Complete extended-coordinate addition for Edwards25519."""
+    x1, y1, z1, t1 = first
+    x2, y2, z2, t2 = second
+    a = (y1 - x1) * (y2 - x2) % _ED25519_P
+    b = (y1 + x1) * (y2 + x2) % _ED25519_P
+    c = 2 * _ED25519_D * t1 * t2 % _ED25519_P
+    d = 2 * z1 * z2 % _ED25519_P
+    e = (b - a) % _ED25519_P
+    f = (d - c) % _ED25519_P
+    g = (d + c) % _ED25519_P
+    h = (b + a) % _ED25519_P
+    return e * f % _ED25519_P, g * h % _ED25519_P, f * g % _ED25519_P, e * h % _ED25519_P
+
+
+def _ed25519_multiply(
+    point: tuple[int, int, int, int], scalar: int
+) -> tuple[int, int, int, int]:
+    result = (0, 1, 1, 0)
+    addend = point
+    while scalar:
+        if scalar & 1:
+            result = _ed25519_add(result, addend)
+        addend = _ed25519_add(addend, addend)
+        scalar >>= 1
+    return result
+
+
+def _valid_ed25519_subgroup_encoding(encoded: bytes) -> bool:
+    point = _decode_ed25519_point(encoded)
+    if point is None:
+        return False
+    x, y, z, _ = point
+    if x % _ED25519_P == 0 and (y - z) % _ED25519_P == 0:
+        return False
+    lx, ly, lz, _ = _ed25519_multiply(point, _ED25519_L)
+    return lx % _ED25519_P == 0 and (ly - lz) % _ED25519_P == 0
+
+
 def verify_signature(fields: dict[str, str]) -> bool | None:
     if fields.get("version") != "GOVP-1":
         return None
     try:
         public_key = base64.b64decode(fields["public-key"], validate=True)
         signature = base64.b64decode(fields["signature"], validate=True)
-        if len(public_key) != 32 or len(signature) != 64:
+        if (
+            len(public_key) != 32
+            or len(signature) != 64
+            or not _valid_ed25519_subgroup_encoding(public_key)
+            or not _valid_ed25519_subgroup_encoding(signature[:32])
+            or int.from_bytes(signature[32:], "little") >= _ED25519_L
+        ):
             return False
         Ed25519PublicKey.from_public_bytes(public_key).verify(signature, signing_message(fields))
         return True
@@ -430,14 +519,15 @@ def _valid_uri_characters(value: str) -> bool:
     return True
 
 
-def _valid_rfc3339_utc(value: str) -> bool:
+def _rfc3339_utc_datetime(value: str) -> datetime | None:
     match = RFC3339_UTC_PATTERN.fullmatch(value)
     if match is None:
-        return False
+        return None
     second = match.group("second")
+    leap_second = second == "60"
     if second == "60":
         if match.group("hour") != "23" or match.group("minute") != "59":
-            return False
+            return None
         parseable = value.replace(":60", ":59", 1)
     else:
         parseable = value
@@ -452,8 +542,14 @@ def _valid_rfc3339_utc(value: str) -> bool:
     try:
         parsed = datetime.fromisoformat(parseable.removesuffix("Z") + "+00:00")
     except ValueError:
-        return False
-    return parsed.utcoffset() is not None
+        return None
+    if parsed.utcoffset() is None:
+        return None
+    return parsed + timedelta(seconds=1) if leap_second else parsed
+
+
+def _valid_rfc3339_utc(value: str) -> bool:
+    return _rfc3339_utc_datetime(value) is not None
 
 
 def _presentation_warnings(fields: dict[str, str]) -> tuple[str, ...]:

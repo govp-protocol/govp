@@ -24,9 +24,10 @@ The document MUST be fetched over HTTPS from the same origin as the GOVP-1
 record's `canonical` URI. Its `canonical` member MUST equal the final response
 URL after redirects. Credentialed URLs and HTTPS downgrades MUST be rejected.
 
-`authority` is `https-origin`: freshness and authority come from a successful,
-current TLS fetch from that origin. A saved status file is only a snapshot and
-MUST NOT be presented as proof of current trust. The endpoint SHOULD send
+`authority` is `https-origin`: authority comes from a successful TLS fetch from
+that origin, while freshness is independently bounded by `generated_at`. A
+saved status file is only a snapshot and MUST NOT be presented as proof of
+current trust. The endpoint SHOULD send
 `Cache-Control: no-store` and `Access-Control-Allow-Origin: *`.
 
 Status is not signed by the record key. That is deliberate: a compromised key
@@ -71,10 +72,19 @@ of the following:
 4. the status document is canonically bound to its final fetched URL;
 5. the record public key appears exactly once with state `active`;
 6. the record GOVP-ID does not occur in `revoked_records`.
+7. `generated_at` is no older than the verifier's configured maximum age and
+   no further in the future than its configured clock-skew allowance.
 
-Any failed check yields `currently_trusted=false`. Network failure or offline
+Any failed check yields `currently_trusted=false`. The reference policy uses a
+maximum age of 300 seconds and a future-skew allowance of 60 seconds; callers
+MAY choose stricter non-negative bounds. Network failure or offline
 evaluation yields an indeterminate current state, never `true`. Core validity
 remains separately reportable and is not changed by status.
+
+`snapshot_valid` means that the saved status document is internally coherent
+with the record. It excludes transport and liveness and MUST NOT be treated as
+current trust. The deprecated `snapshot_trusted` name is a compatibility alias
+for `snapshot_valid` during the 0.1.x implementation line.
 
 `retired` means the key is no longer authorized for a current-trust result.
 `revoked` means the origin explicitly distrusts it. Historical acceptance and
@@ -97,5 +107,8 @@ See `docs/key-lifecycle.md` for the operational procedure.
 - A TLS or origin compromise can falsify online status. Independent deployments
   should add DNSSEC, transparency or an external trust anchor.
 - Cached or mirrored copies are snapshots. They cannot produce current trust.
+- A verifier MUST compare `generated_at` with its own current UTC clock; an
+  HTTPS response alone is not freshness evidence. This bounds stale replay but
+  does not create an independent timestamp.
 - Clients must apply normal JSON size, depth and duplicate-handling limits.
 - Status failure must never be converted into `currently_trusted=true`.

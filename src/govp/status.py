@@ -6,6 +6,7 @@ import base64
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from os import PathLike
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from urllib.parse import urlsplit
 
 from .core import (
     GOVP_ID_PATTERN,
+    _rfc3339_utc_datetime,
     _valid_absolute_url,
     _valid_base64_length,
     _valid_rfc3339_utc,
@@ -38,6 +40,8 @@ STATUS_FIELDS = frozenset(
 )
 KEY_FIELDS = frozenset({"key_id", "public_key", "state", "changed_at"})
 REVOCATION_FIELDS = frozenset({"govp_id", "revoked_at", "reason"})
+DEFAULT_STATUS_MAX_AGE_SECONDS = 300
+DEFAULT_STATUS_MAX_FUTURE_SKEW_SECONDS = 60
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,11 @@ class StatusResult:
     snapshot_trusted: bool
     checks: dict[str, bool | None]
     reasons: tuple[str, ...] = ()
+
+    @property
+    def snapshot_valid(self) -> bool:
+        """Whether the saved snapshot is internally valid, not proof of liveness."""
+        return self.snapshot_trusted
 
 
 def derive_key_id(public_key: str) -> str:
@@ -145,12 +154,35 @@ def _status_format_ok(status: Mapping[str, Any]) -> bool:
     return True
 
 
+def _status_fresh(
+    status: Mapping[str, Any],
+    *,
+    now: datetime,
+    max_age_seconds: int,
+    max_future_skew_seconds: int,
+) -> bool:
+    generated_at = status.get("generated_at")
+    if not isinstance(generated_at, str):
+        return False
+    generated = _rfc3339_utc_datetime(generated_at)
+    if generated is None:
+        return False
+    return (
+        now - timedelta(seconds=max_age_seconds)
+        <= generated
+        <= now + timedelta(seconds=max_future_skew_seconds)
+    )
+
+
 def evaluate_status(
     fields: dict[str, str],
     status: Mapping[str, Any],
     *,
     fetched_url: str | None = None,
     record_fetched_url: str | None = None,
+    now: datetime | None = None,
+    max_age_seconds: int = DEFAULT_STATUS_MAX_AGE_SECONDS,
+    max_future_skew_seconds: int = DEFAULT_STATUS_MAX_FUTURE_SKEW_SECONDS,
 ) -> StatusResult:
     """Apply a status snapshot; live trust requires its canonical HTTPS fetch.
 
@@ -158,8 +190,26 @@ def evaluate_status(
     ``currently_trusted=None`` because a saved file cannot prove current
     liveness.
     """
-    core_valid = verify(fields, fetched_url=record_fetched_url).ok
+    if max_age_seconds < 0 or max_future_skew_seconds < 0:
+        raise ValueError("status freshness windows must be non-negative")
+    evaluation_time = now or datetime.now(timezone.utc)
+    if evaluation_time.utcoffset() is None:
+        raise ValueError("status evaluation time must be timezone-aware")
+    evaluation_time = evaluation_time.astimezone(timezone.utc)
+
+    core_result = verify(fields, fetched_url=record_fetched_url)
+    normalized_fields = core_result.fields
+    core_valid = core_result.ok
     format_ok = _status_format_ok(status)
+    status_fresh = bool(
+        format_ok
+        and _status_fresh(
+            status,
+            now=evaluation_time,
+            max_age_seconds=max_age_seconds,
+            max_future_skew_seconds=max_future_skew_seconds,
+        )
+    )
     status_canonical = status.get("canonical")
     canonical_ok: bool | None = None
     if fetched_url is not None:
@@ -172,23 +222,25 @@ def evaluate_status(
     same_origin = bool(
         format_ok
         and isinstance(status_canonical, str)
-        and _origin(fields.get("canonical", "")) == _origin(status_canonical)
+        and _origin(normalized_fields.get("canonical", "")) == _origin(status_canonical)
     )
     key_authorized = False
     if format_ok:
         key_authorized = any(
-            entry["public_key"] == fields.get("public-key")
+            entry["public_key"] == normalized_fields.get("public-key")
             and entry["state"] == "active"
             for entry in status["keys"]
         )
     record_not_revoked = False
     if format_ok:
-        record_not_revoked = fields.get("govp-id") not in {
+        govp_id = normalized_fields.get("govp-id")
+        record_not_revoked = bool(govp_id) and govp_id not in {
             entry["govp_id"] for entry in status["revoked_records"]
         }
     checks: dict[str, bool | None] = {
         "core": core_valid,
         "status-format": format_ok,
+        "status-fresh": status_fresh,
         "status-canonical": canonical_ok,
         "same-origin": same_origin,
         "key-active": key_authorized,
@@ -198,6 +250,8 @@ def evaluate_status(
         (core_valid, format_ok, same_origin, key_authorized, record_not_revoked)
     )
     online = fetched_url is not None and record_fetched_url is not None
-    currently_trusted = snapshot_trusted and canonical_ok is True if online else None
+    currently_trusted = (
+        snapshot_trusted and status_fresh and canonical_ok is True if online else None
+    )
     reasons = tuple(name for name, value in checks.items() if value is False)
     return StatusResult(currently_trusted, snapshot_trusted, checks, reasons)

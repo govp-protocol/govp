@@ -38,6 +38,10 @@ pip-audit -r requirements-release.txt --progress-spinner=off
 - Exclude only `signature` and empty values.
 - Prefix `GOVP::record.v1` followed by a NUL byte.
 - Verify Ed25519, GOVP-ID and every applicable conditional check.
+- Reject JSON source properties that collide after name normalization or legacy
+  aliasing; retain last-occurrence wins only for the line-oriented text form.
+- Reject non-canonical or non-prime-subgroup Ed25519 point encodings and
+  signature scalars at or above the subgroup order.
 - Validate fractional RFC 3339 seconds independently of runtime parser width.
 - Treat URL fields as visible ASCII RFC 3986 URI strings.
 - Keep offline canonical and absent-asset checks as not evaluated, not passed.
