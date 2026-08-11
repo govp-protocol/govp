@@ -154,6 +154,11 @@ def _status_format_ok(status: Mapping[str, Any]) -> bool:
     return True
 
 
+def status_format_ok(status: Mapping[str, Any]) -> bool:
+    """Return whether a decoded object satisfies the GOVP-STATUS-1 shape."""
+    return _status_format_ok(status)
+
+
 def _status_fresh(
     status: Mapping[str, Any],
     *,

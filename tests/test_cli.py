@@ -1,3 +1,4 @@
+import base64
 import json
 from argparse import Namespace
 from pathlib import Path
@@ -212,7 +213,7 @@ def test_bundled_conformance_and_example_extraction(tmp_path, capsys):
     assert cli.command_conformance(Namespace(run=True)) == 0
     output = capsys.readouterr().out
     assert "GOVP conformance: PASS" in output
-    assert "19/19 vectors" in output
+    assert "25/25 vectors" in output
 
     assert cli.command_status_conformance(Namespace(run=True)) == 0
     output = capsys.readouterr().out
@@ -301,6 +302,24 @@ def test_issue_command_rejects_private_key_with_broad_permissions(tmp_path):
 
     with pytest.raises(ValueError, match="chmod 600"):
         cli._load_private_key(private_key)
+
+
+def test_envelope_verify_command_binds_exact_subject_bytes(tmp_path, capsys):
+    corpus = json.loads(
+        (ROOT / "conformance/extension-vectors.json").read_text(encoding="utf-8")
+    )
+    vector = corpus["vectors"][0]
+    envelope = tmp_path / "evidence-envelope.json"
+    subject = tmp_path / "subject.bin"
+    envelope.write_text(json.dumps(vector["envelope"]), encoding="utf-8")
+    subject.write_bytes(base64.b64decode(vector["subject_base64"]))
+    args = Namespace(envelope=str(envelope), subject=str(subject), json=True)
+
+    assert cli.command_envelope_verify(args) == 0
+    assert json.loads(capsys.readouterr().out)["ok"] is True
+    subject.write_bytes(b"tampered")
+    assert cli.command_envelope_verify(args) == 1
+    assert json.loads(capsys.readouterr().out)["checks"]["subject"] is False
 
 
 def test_main_reports_expected_user_errors(monkeypatch, capsys):
