@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://govp.io/govp/schemas/govp-publication-1.schema.json",
+  "title": "GOVP-PUBLICATION-1",
+  "oneOf": [
+    { "$ref": "#/$defs/publishRequest" },
+    { "$ref": "#/$defs/inclusionBundle" },
+    { "$ref": "#/$defs/publicationIndex" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "keyId": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "absoluteHttpsUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "proofStep": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/sha256" },
+        { "type": "boolean" }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "eventDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key_id", "signing_input_sha256", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "key_id": { "$ref": "#/$defs/keyId" },
+        "signing_input_sha256": { "$ref": "#/$defs/sha256" },
+        "type": { "type": "string", "pattern": "^[a-z0-9.-]+/[1-9][0-9]*$" }
+      }
+    },
+    "inclusionProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "batch_id",
+        "descriptor",
+        "entry_id",
+        "intra_proof",
+        "root",
+        "shard",
+        "shard_root",
+        "top_proof"
+      ],
+      "properties": {
+        "batch_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+        "descriptor": { "$ref": "#/$defs/eventDescriptor" },
+        "entry_id": { "$ref": "#/$defs/sha256" },
+        "intra_proof": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/proofStep" }
+        },
+        "root": { "$ref": "#/$defs/sha256" },
+        "shard": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "shard_root": { "$ref": "#/$defs/sha256" },
+        "top_proof": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/proofStep" }
+        }
+      }
+    },
+    "eventInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "envelope", "subject"],
+      "properties": {
+        "disposition": { "enum": ["publish", "sealed_private"] },
+        "envelope": { "$ref": "#/$defs/relativePath" },
+        "subject": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "githubWorkload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["refs", "repository"],
+      "properties": {
+        "refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^refs/(heads|tags)/[A-Za-z0-9._/-]+$" }
+        },
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" }
+      }
+    },
+    "publishRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization",
+        "batch_id",
+        "created_at",
+        "domain",
+        "events",
+        "identity_record",
+        "publish_types",
+        "schema",
+        "status",
+        "workload"
+      ],
+      "properties": {
+        "authorization": { "$ref": "#/$defs/relativePath" },
+        "base_index": { "$ref": "#/$defs/relativePath" },
+        "batch_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "domain": { "$ref": "#/$defs/absoluteHttpsUrl" },
+        "events": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100000,
+          "items": { "$ref": "#/$defs/eventInput" }
+        },
+        "identity_record": { "$ref": "#/$defs/relativePath" },
+        "publish_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9.-]+/[1-9][0-9]*$" }
+        },
+        "schema": { "const": "org.govp.publish-request/1" },
+        "status": { "$ref": "#/$defs/relativePath" },
+        "workload": { "$ref": "#/$defs/githubWorkload" }
+      }
+    },
+    "inclusionBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization_key_id",
+        "batch_id",
+        "disposition",
+        "envelope",
+        "proof",
+        "schema",
+        "subject_base64"
+      ],
+      "properties": {
+        "authorization_key_id": { "$ref": "#/$defs/keyId" },
+        "batch_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+        "disposition": { "enum": ["publish", "sealed_private"] },
+        "envelope": { "type": "object" },
+        "proof": { "$ref": "#/$defs/inclusionProof" },
+        "schema": { "const": "org.govp.publication-proof/1" },
+        "subject_base64": { "type": "string", "pattern": "^[A-Za-z0-9+/]*={0,2}$" }
+      }
+    },
+    "publicationIndex": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["batches", "canonical", "format", "identity", "publication", "status"],
+      "properties": {
+        "batches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["count", "created_at", "id", "root", "url"],
+            "properties": {
+              "count": { "type": "integer", "minimum": 1 },
+              "created_at": { "$ref": "#/$defs/timestamp" },
+              "id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+              "root": { "$ref": "#/$defs/sha256" },
+              "url": { "$ref": "#/$defs/absoluteHttpsUrl" }
+            }
+          }
+        },
+        "canonical": { "$ref": "#/$defs/absoluteHttpsUrl" },
+        "format": { "const": "GOVP-PUBLICATION-INDEX-1" },
+        "identity": { "$ref": "#/$defs/absoluteHttpsUrl" },
+        "publication": { "$ref": "#/$defs/absoluteHttpsUrl" },
+        "status": { "$ref": "#/$defs/absoluteHttpsUrl" }
+      }
+    },
+    "authorizationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_types", "domain", "key_id", "public_key", "valid_from", "valid_until"],
+      "properties": {
+        "allowed_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9.-]+/[1-9][0-9]*$" }
+        },
+        "domain": { "$ref": "#/$defs/absoluteHttpsUrl" },
+        "key_id": { "$ref": "#/$defs/keyId" },
+        "public_key": { "type": "string", "pattern": "^[A-Za-z0-9+/]{43}=$" },
+        "valid_from": { "$ref": "#/$defs/timestamp" },
+        "valid_until": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "batchPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["batch_id", "count", "disposition", "event_types", "root", "shards", "tree_alg"],
+      "properties": {
+        "batch_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+        "count": { "type": "integer", "minimum": 1 },
+        "disposition": { "enum": ["publish", "sealed_private"] },
+        "event_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9.-]+/[1-9][0-9]*$" }
+        },
+        "root": { "$ref": "#/$defs/sha256" },
+        "shards": { "const": 256 },
+        "tree_alg": { "const": "sha256-rfc6962-sharded-256" }
+      }
+    }
+  }
+}

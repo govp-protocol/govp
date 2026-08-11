@@ -6,7 +6,7 @@ on:
       tag:
         description: "Existing release tag to publish"
         required: true
-        default: "v0.1.12"
+        default: "v0.1.13"
         type: string
       confirmation:
         description: "Type publish-govp to authorize the irreversible upload"
@@ -53,6 +53,7 @@ jobs:
           package-test/bin/python -m pip install dist/*.whl
           package-test/bin/govp self-test
           package-test/bin/govp conformance --run
+          package-test/bin/govp publication-conformance --run
           package-test/bin/govp examples --extract package-examples
           package-test/bin/govp verify package-examples/manufacturing-record.govp.txt \
             --asset package-examples/manufacturing-record.statement.txt
