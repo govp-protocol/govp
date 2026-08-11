@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import dataclass
 from importlib.resources import files
@@ -16,6 +17,7 @@ from .core import (
     signing_input,
     verify,
 )
+from .envelope import ENVELOPE_DOMAIN, verify_envelope
 from .status import _status_format_ok
 
 
@@ -119,6 +121,45 @@ def run_bundled_conformance() -> ConformanceResult:
                         failures.append(f"{name}: invalid input was accepted")
             except (KeyError, TypeError, ValueError) as error:
                 failures.append(f"{name}: {error}")
+
+    extension_corpus = _read_json("conformance", "extension-vectors.json")
+    expected_domain = extension_corpus.get("domain")
+    if not isinstance(expected_domain, str):
+        failures.append("extension-suite: missing domain")
+    elif ENVELOPE_DOMAIN != expected_domain.replace("\\0", "\0").encode():
+        failures.append("extension-suite: domain separator mismatch")
+    extension_vectors = extension_corpus.get("vectors")
+    if not isinstance(extension_vectors, list):
+        raise TypeError("bundled extension conformance vectors must be a list")
+    for index, vector in enumerate(extension_vectors, start=1):
+        total += 1
+        name = str(vector.get("name", f"extension-{index}"))
+        try:
+            encoded_subject = vector["subject_base64"]
+            subject = (
+                None
+                if encoded_subject is None
+                else base64.b64decode(encoded_subject, validate=True)
+            )
+            extension_result = verify_envelope(
+                vector["envelope"], subject_bytes=subject
+            )
+            expected = vector["expected"]
+            extension_checks = all(
+                extension_result.checks[key] == expected[key]
+                for key in extension_result.checks
+            )
+            if (
+                extension_checks
+                and extension_result.ok == expected["valid"]
+                and extension_result.signing_input_sha256
+                == expected["signing_input_sha256"]
+            ):
+                passed += 1
+            else:
+                failures.append(f"{name}: verdict mismatch")
+        except (KeyError, TypeError, ValueError) as error:
+            failures.append(f"{name}: {error}")
 
     return ConformanceResult(not failures, passed, total, tuple(failures))
 

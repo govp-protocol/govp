@@ -37,6 +37,7 @@ from .core import (
     signing_input,
     verify,
 )
+from .envelope import load_envelope, verify_envelope
 from .status import StatusResult, evaluate_status, load_status, parse_status
 
 MAX_RECORD_BYTES = 1024 * 1024
@@ -125,6 +126,29 @@ def command_verify_url(args: argparse.Namespace) -> int:
     fields = parse_record(text)
     result = verify(fields, fetched_url=final_url)
     _print_result(result, args.json)
+    return 0 if result.ok else 1
+
+
+def command_envelope_verify(args: argparse.Namespace) -> int:
+    envelope = load_envelope(args.envelope)
+    subject = Path(args.subject).read_bytes() if args.subject else None
+    result = verify_envelope(envelope, subject_bytes=subject)
+    payload = {
+        "ok": result.ok,
+        "id": envelope.get("id"),
+        "type": envelope.get("type"),
+        "checks": result.checks,
+        "signing_input_sha256": result.signing_input_sha256,
+        "warnings": list(result.warnings),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print("GOVP evidence envelope:", "VALID" if result.ok else "INVALID")
+        for name, value in result.checks.items():
+            label = "not checked" if value is None else ("pass" if value else "FAIL")
+            print(f"  {name:<16} {label}")
+        print(f"  envelope       {envelope.get('id', '-')}")
     return 0 if result.ok else 1
 
 
@@ -360,6 +384,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     url_parser.add_argument("--json", action="store_true")
     url_parser.set_defaults(handler=command_verify_url)
+
+    envelope_parser = sub.add_parser(
+        "envelope", help="work with signed GOVP-EXT-1 evidence envelopes"
+    )
+    envelope_sub = envelope_parser.add_subparsers(dest="envelope_command", required=True)
+    envelope_verify = envelope_sub.add_parser("verify", help="verify a local evidence envelope")
+    envelope_verify.add_argument("envelope")
+    envelope_verify.add_argument(
+        "--subject", help="also bind the declared SHA-256 to these exact bytes"
+    )
+    envelope_verify.add_argument("--json", action="store_true")
+    envelope_verify.set_defaults(handler=command_envelope_verify)
 
     status_parser = sub.add_parser(
         "status", help="evaluate a local GOVP-STATUS-1 snapshot"

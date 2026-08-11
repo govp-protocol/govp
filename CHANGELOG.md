@@ -3,6 +3,15 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## 0.1.12 — 2026-08-11
+
+- define GOVP-EXT-1 evidence envelopes, their origin contract, security model
+  and extension registry without changing GOVP-1;
+- add strict Python signing and verification, a local `govp envelope verify`
+  command, JSON Schema and six byte-exact cross-language vectors;
+- register digest-bound SLSA/in-toto, Sigstore, Rekor and RFC 3161 external
+  attestations without implying that a locator alone proves validity.
+
 ## 0.1.11 — 2026-08-06
 
 - require a recent GOVP-STATUS-1 `generated_at` value before returning

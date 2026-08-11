@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://govp.io/govp/schemas/govp-evidence-envelope-1.schema.json",
+  "title": "GOVP-EVIDENCE-ENVELOPE-1",
+  "type": "object",
+  "required": [
+    "govp", "extension", "type", "id", "issuer", "subject", "created_at",
+    "hash", "payload", "references", "evidence", "origin", "signature"
+  ],
+  "properties": {
+    "govp": { "const": "GOVP-EXT-1" },
+    "extension": { "$ref": "#/$defs/extension" },
+    "type": { "$ref": "#/$defs/typeName" },
+    "id": { "$ref": "#/$defs/id" },
+    "issuer": { "$ref": "#/$defs/issuer" },
+    "subject": { "$ref": "#/$defs/subject" },
+    "created_at": { "$ref": "#/$defs/timestamp" },
+    "hash": { "$ref": "#/$defs/hash" },
+    "payload": { "$ref": "#/$defs/jsonObject" },
+    "references": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/reference" },
+      "maxItems": 256
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidence" },
+      "maxItems": 256
+    },
+    "origin": { "$ref": "#/$defs/origin" },
+    "signature": { "$ref": "#/$defs/signature" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\u0000\\r\\n]+$"
+    },
+    "httpsUri": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "string" },
+        { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } },
+        { "$ref": "#/$defs/jsonObject" }
+      ]
+    },
+    "jsonObject": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+    },
+    "typeName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:\\.[a-z0-9-]+)+/[1-9][0-9]*$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hash": {
+      "type": "object",
+      "required": ["alg", "value"],
+      "properties": {
+        "alg": { "const": "sha256" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "extension": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:\\.[a-z0-9-]+)+$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      },
+      "additionalProperties": false
+    },
+    "issuer": {
+      "type": "object",
+      "required": ["canonical", "name"],
+      "properties": {
+        "canonical": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://[^/?#]+/\\.well-known/govp\\.txt$"
+        },
+        "name": { "$ref": "#/$defs/id" }
+      },
+      "additionalProperties": false
+    },
+    "subject": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "$ref": "#/$defs/id" },
+        "id": { "$ref": "#/$defs/id" }
+      },
+      "additionalProperties": false
+    },
+    "origin": {
+      "type": "object",
+      "required": ["origin", "observed_by", "observation"],
+      "properties": {
+        "origin": {
+          "enum": ["system_observed", "artifact_derived", "human_asserted", "upstream_attested"]
+        },
+        "observed_by": { "$ref": "#/$defs/id" },
+        "observation": {
+          "oneOf": [
+            { "$ref": "#/$defs/jsonObject" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "origin": { "const": "human_asserted" } }, "required": ["origin"] },
+          "then": { "properties": { "observation": { "type": "null" } } },
+          "else": { "properties": { "observation": { "type": "object" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "id", "digest"],
+          "properties": {
+            "type": { "const": "govp" },
+            "id": { "$ref": "#/$defs/id" },
+            "digest": { "$ref": "#/$defs/digest" },
+            "locator": { "$ref": "#/$defs/httpsUri" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "format", "digest", "locator"],
+          "properties": {
+            "type": { "const": "external_attestation" },
+            "format": {
+              "enum": [
+                "application/vnd.in-toto+json",
+                "application/vnd.dev.sigstore.bundle+json;version=0.3",
+                "application/vnd.rekor.entry+json",
+                "application/timestamp-reply"
+              ]
+            },
+            "digest": { "$ref": "#/$defs/digest" },
+            "locator": { "$ref": "#/$defs/httpsUri" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["type", "id", "digest"],
+      "properties": {
+        "type": { "$ref": "#/$defs/typeName" },
+        "id": { "$ref": "#/$defs/id" },
+        "digest": { "$ref": "#/$defs/digest" },
+        "locator": { "$ref": "#/$defs/httpsUri" }
+      },
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "required": ["alg", "key_id", "public_key", "signing_input_sha256", "value"],
+      "properties": {
+        "alg": { "const": "Ed25519" },
+        "key_id": { "$ref": "#/$defs/digest" },
+        "public_key": { "type": "string", "pattern": "^[A-Za-z0-9+/]{43}=$" },
+        "signing_input_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "value": { "type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

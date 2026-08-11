@@ -2,6 +2,7 @@ name: conformance
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -87,8 +88,10 @@ jobs:
           python -m json.tool conformance/vectors.json >/dev/null
           python -m json.tool conformance/json-vectors.json >/dev/null
           python -m json.tool conformance/status-vectors.json >/dev/null
+          python -m json.tool conformance/extension-vectors.json >/dev/null
           python -m json.tool schema/govp-1.schema.json >/dev/null
           python -m json.tool schema/govp-status-1.schema.json >/dev/null
+          python -m json.tool schema/govp-evidence-envelope-1.schema.json >/dev/null
           python - <<'PY'
           import pathlib
           import tomllib
