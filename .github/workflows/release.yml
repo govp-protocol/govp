@@ -6,7 +6,7 @@ on:
       tag:
         description: "Existing signed release tag"
         required: true
-        default: "v0.1.12"
+        default: "v0.1.13"
         type: string
       confirmation:
         description: "Type release-govp to authorize immutable publication"
@@ -110,10 +110,12 @@ jobs:
           if [ -f dist/govp.exe ]; then
             dist/govp.exe self-test
             dist/govp.exe conformance --run
+            dist/govp.exe publication-conformance --run
             dist/govp.exe examples --extract govp-examples
           else
             dist/govp self-test
             dist/govp conformance --run
+            dist/govp publication-conformance --run
             dist/govp examples --extract govp-examples
           fi
       - name: Verify HTTPS from the standalone binary

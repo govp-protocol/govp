@@ -24,6 +24,7 @@ from . import __version__
 from ._bundled import (
     extract_bundled_examples,
     run_bundled_conformance,
+    run_bundled_publication_conformance,
     run_bundled_status_conformance,
 )
 from .core import (
@@ -38,6 +39,13 @@ from .core import (
     verify,
 )
 from .envelope import load_envelope, verify_envelope
+from .publication import (
+    authorize_subordinate_key,
+    publish_request,
+    verify_publication_custody,
+    verify_publication_tree,
+    verify_publication_url,
+)
 from .status import StatusResult, evaluate_status, load_status, parse_status
 
 MAX_RECORD_BYTES = 1024 * 1024
@@ -356,11 +364,99 @@ def command_status_conformance(_: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def command_publication_conformance(_: argparse.Namespace) -> int:
+    result = run_bundled_publication_conformance()
+    print(
+        "GOVP-PUBLICATION-1 conformance:",
+        "PASS" if result.ok else "FAIL",
+        f"({result.passed}/{result.total} vectors)",
+    )
+    for failure in result.failures:
+        print(f"  FAIL {failure}")
+    return 0 if result.ok else 1
+
+
 def command_examples(args: argparse.Namespace) -> int:
     extracted = extract_bundled_examples(Path(args.directory))
     print(f"Extracted {len(extracted)} synthetic GOVP examples to {args.directory}")
     for path in extracted:
         print(f"  {path}")
+    return 0
+
+
+def command_publication_authorize_key(args: argparse.Namespace) -> int:
+    envelope = authorize_subordinate_key(
+        domain=args.domain,
+        domain_private_key=args.domain_private_key,
+        subordinate_public_key=args.subordinate_public_key,
+        allowed_types=args.allow,
+        valid_from=args.valid_from,
+        valid_until=args.valid_until,
+        output=args.output,
+        created_at=args.created_at,
+    )
+    print(f"Wrote {envelope['id']} to {args.output}")
+    return 0
+
+
+def _print_publication_result(result, as_json: bool) -> None:
+    payload = {
+        "ok": result.ok,
+        "event_id": result.event_id,
+        "batch_id": result.batch_id,
+        "layers": result.layers,
+        "reasons": list(result.reasons),
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    print("GOVP publication:", "VALID" if result.ok else "INVALID")
+    for name in ("L0", "L1", "L2"):
+        value = result.layers[name]
+        label = "not evaluated" if value is None else ("pass" if value else "FAIL")
+        print(f"  {name:<4} {label}")
+    for reason in result.reasons:
+        print(f"  reason {reason}")
+
+
+def command_publication_verify(args: argparse.Namespace) -> int:
+    choices = sum(bool(value) for value in (args.tree, args.custody, args.base_url))
+    if choices != 1:
+        raise ValueError("choose exactly one of --tree, --custody or --base-url")
+    if args.tree:
+        result = verify_publication_tree(args.proof, args.tree)
+    elif args.custody:
+        result = verify_publication_custody(args.proof, args.custody)
+    else:
+        result = verify_publication_url(args.proof, args.base_url)
+    _print_publication_result(result, args.json)
+    return 0 if result.ok else 1
+
+
+def command_publish(args: argparse.Namespace) -> int:
+    result = publish_request(
+        request_path=args.request,
+        domain_private_key=args.domain_private_key,
+        public_dir=args.public_dir,
+        custody_dir=args.custody_dir,
+    )
+    payload = {
+        "public_dir": str(result.public_dir),
+        "custody_dir": str(result.custody_dir),
+        "public_count": result.public_count,
+        "sealed_private_count": result.sealed_count,
+        "public_root": result.public_root,
+        "sealed_private_root": result.sealed_root,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(f"Published {result.public_count} event(s) to {result.public_dir}")
+        print(f"Sealed {result.sealed_count} private event(s) in {result.custody_dir}")
+        if result.public_root:
+            print(f"  public root  {result.public_root}")
+        if result.sealed_root:
+            print(f"  private root {result.sealed_root}")
     return 0
 
 
@@ -478,6 +574,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status_conformance.set_defaults(handler=command_status_conformance)
 
+    publication_conformance = sub.add_parser(
+        "publication-conformance",
+        help="run the GOVP-PUBLICATION-1 Merkle and proof vectors",
+    )
+    publication_conformance.add_argument(
+        "--run",
+        action="store_true",
+        required=True,
+        help="execute all bundled publication vectors",
+    )
+    publication_conformance.set_defaults(handler=command_publication_conformance)
+
     examples = sub.add_parser("examples", help="extract bundled synthetic examples")
     examples.add_argument(
         "--extract",
@@ -487,6 +595,45 @@ def build_parser() -> argparse.ArgumentParser:
         help="destination directory",
     )
     examples.set_defaults(handler=command_examples)
+
+    publication = sub.add_parser(
+        "publication", help="authorize and verify static domain publications"
+    )
+    publication_sub = publication.add_subparsers(
+        dest="publication_command", required=True
+    )
+    authorize = publication_sub.add_parser(
+        "authorize-key", help="authorize one subordinate Ed25519 key"
+    )
+    authorize.add_argument("--domain", required=True)
+    authorize.add_argument("--domain-private-key", required=True, metavar="PEM")
+    authorize.add_argument("--subordinate-public-key", required=True, metavar="PEM")
+    authorize.add_argument("--allow", action="append", required=True, metavar="TYPE")
+    authorize.add_argument("--valid-from", required=True)
+    authorize.add_argument("--valid-until", required=True)
+    authorize.add_argument("--created-at")
+    authorize.add_argument("--output", required=True)
+    authorize.set_defaults(handler=command_publication_authorize_key)
+
+    publication_verify = publication_sub.add_parser(
+        "verify", help="verify a proof using static files only"
+    )
+    publication_verify.add_argument("proof")
+    publication_verify.add_argument("--tree")
+    publication_verify.add_argument("--custody")
+    publication_verify.add_argument("--base-url")
+    publication_verify.add_argument("--json", action="store_true")
+    publication_verify.set_defaults(handler=command_publication_verify)
+
+    publish = sub.add_parser(
+        "publish", help="generate a static domain tree from a reviewed CI request"
+    )
+    publish.add_argument("--request", required=True)
+    publish.add_argument("--domain-private-key", required=True, metavar="PEM")
+    publish.add_argument("--public-dir", required=True)
+    publish.add_argument("--custody-dir", required=True)
+    publish.add_argument("--json", action="store_true")
+    publish.set_defaults(handler=command_publish)
     return parser
 
 

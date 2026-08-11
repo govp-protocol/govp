@@ -18,6 +18,7 @@ from .core import (
     verify,
 )
 from .envelope import ENVELOPE_DOMAIN, verify_envelope
+from .publication import build_publication_tree, publication_entry_id
 from .status import _status_format_ok
 
 
@@ -186,6 +187,52 @@ def run_bundled_status_conformance() -> ConformanceResult:
     return ConformanceResult(
         not failures, passed, len(vectors), tuple(failures)
     )
+
+
+def run_bundled_publication_conformance() -> ConformanceResult:
+    """Run the Merkle and proof vectors shared with TypeScript."""
+    corpus = _read_json("conformance", "publication-vectors.json")
+    vectors = corpus.get("vectors")
+    if not isinstance(vectors, list):
+        raise TypeError("bundled publication conformance vectors must be a list")
+    failures: list[str] = []
+    passed = 0
+    key_id = str(corpus.get("key_id", ""))
+    for vector in vectors:
+        name = str(vector.get("name", "publication-vector"))
+        try:
+            if "descriptors" in vector:
+                descriptors = vector["descriptors"]
+            else:
+                recipe = vector["recipe"]
+                descriptors = [
+                    {
+                        "id": f"{recipe['id_prefix']}-{index:05d}",
+                        "key_id": key_id,
+                        "signing_input_sha256": sha256(
+                            f"{recipe['signing_input_prefix']}{index}".encode()
+                        ),
+                        "type": recipe["type"],
+                    }
+                    for index in range(int(recipe["count"]))
+                ]
+            root, proofs = build_publication_tree(
+                descriptors, str(vector["batch_id"])
+            )
+            selected = descriptors[int(vector["selected"])]
+            entry_id = publication_entry_id(selected)
+            expected = vector["expected"]
+            if (
+                root == expected["root"]
+                and entry_id == expected["entry_id"]
+                and proofs[entry_id] == expected["proof"]
+            ):
+                passed += 1
+            else:
+                failures.append(f"{name}: root or proof mismatch")
+        except (KeyError, TypeError, ValueError) as error:
+            failures.append(f"{name}: {error}")
+    return ConformanceResult(not failures, passed, len(vectors), tuple(failures))
 
 
 def extract_bundled_examples(destination: Path) -> tuple[Path, ...]:

@@ -74,9 +74,10 @@ discard signed data.
 Python 3.10 or newer is required for the reference implementation.
 
 ```bash
-python -m pip install govp==0.1.12
+python -m pip install govp==0.1.13
 govp self-test
 govp conformance --run
+govp publication-conformance --run
 ```
 
 Extract and verify the signed synthetic fixtures included in the installed
@@ -138,6 +139,29 @@ with status `1`, making the same check usable in local workflows and CI.
 For machine-readable output, add `--json`. Exit code `0` means verification
 succeeded, `1` means the record was evaluated and is not valid, and `2` means
 the command or input could not be processed.
+
+## Publish evidence without a verification service
+
+`govp publish` runs only in an explicitly authorized CI workload. It verifies
+each opted-in envelope, builds a 256-shard RFC 6962 Merkle batch and writes a
+static `/.well-known/govp/` tree. Public events receive an O(log N) inclusion
+proof; `sealed_private` events remain in the local custody tree and are never
+copied to the public output.
+
+```bash
+govp publish --request publish-request.json \
+  --domain-private-key domain-key.pem \
+  --public-dir public --custody-dir custody
+govp publication verify public/.well-known/govp/proofs/ENTRY.json \
+  --tree public
+python -m http.server --directory public 8080
+govp publication verify proof.json --base-url http://127.0.0.1:8080
+```
+
+The request, organizational and subordinate-key contract is documented in
+[`docs/publication.md`](docs/publication.md). Editor processes cannot publish,
+and subordinate keys are limited by exact domain, repository, reference,
+event-type scope and expiry.
 
 ## Integrate the verifier
 
@@ -247,8 +271,8 @@ normative text and published vectors, not by matching Python internals.
 
 | Language/runtime | Project | Status |
 |---|---|---|
-| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.12 |
-| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://www.npmjs.com/package/@govp/verifier/v/0.1.8) ([source](https://github.com/govp-protocol/govp-js), [signed release](https://github.com/govp-protocol/govp-js/releases/tag/v0.1.8)) | Independent verifier · 0.1.8 |
+| Python 3.10+ | [`govp`](https://pypi.org/project/govp/) | Reference verifier · 0.1.13 |
+| JavaScript · Node 20+ and browsers | [`@govp/verifier`](https://www.npmjs.com/package/@govp/verifier/v/0.1.10) ([source](https://github.com/govp-protocol/govp-js), [signed release](https://github.com/govp-protocol/govp-js/releases/tag/v0.1.10)) | Independent verifier · 0.1.10 |
 | Browser demo | [`govp.io`](https://github.com/govp-protocol/govp.io) | Interactive GOVP-1 verification |
 | Go | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
 | Rust | [Start an implementation](https://github.com/govp-protocol/govp/issues/new?template=implementation.yml) | Wanted |
@@ -259,7 +283,7 @@ check and stop on specification ambiguity rather than choosing undocumented
 behavior.
 
 Install the independent JavaScript verifier with
-`npm install @govp/verifier@0.1.8`.
+`npm install @govp/verifier@0.1.10`.
 
 ## Stability and provenance
 
@@ -267,12 +291,12 @@ Install the independent JavaScript verifier with
 design.** Changes to signing inputs or wire behavior require explicit
 versioning, new conformance vectors and migration analysis.
 
-The current reference verifier is **0.1.12**. Download the
-[`v0.1.12` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.12)
+The current reference verifier is **0.1.13**. Download the
+[`v0.1.13` immutable release](https://github.com/govp-protocol/govp/releases/tag/v0.1.13)
 or verify its GitHub release attestation:
 
 ```bash
-gh release verify v0.1.12 --repo govp-protocol/govp
+gh release verify v0.1.13 --repo govp-protocol/govp
 ```
 
 The public [provenance manifest](https://govp.io/PROTOCOL-SOURCE.json) records

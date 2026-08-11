@@ -3,6 +3,17 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## 0.1.13 — 2026-08-11
+
+- add `govp publish`, a static-only organizational publication workflow with
+  exact CI workload identity and time-bounded subordinate signing keys;
+- add mesh-compatible 256-shard RFC 6962 batches and O(log N) inclusion proofs,
+  including byte-exact Python/JavaScript vectors for 10,000 events;
+- separate public publication from `sealed_private` custody and reject
+  unapproved event classes, editor publication and out-of-scope keys;
+- add local-tree, custody-tree and static-URL verification, threat model,
+  schema, reproducible CLI tests and the `org.govp.publication` registry entry.
+
 ## 0.1.12 — 2026-08-11
 
 - define GOVP-EXT-1 evidence envelopes, their origin contract, security model
