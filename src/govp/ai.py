@@ -245,6 +245,8 @@ def validate_ai_payload(envelope: dict[str, Any]) -> tuple[bool, str | None]:
     envelope_type = envelope.get("type")
     payload = envelope.get("payload")
     references = envelope.get("references")
+    if not isinstance(payload, dict):
+        return False, "AI1_PAYLOAD_INVALID"
     if not isinstance(references, list):
         return False, "AI1_REFERENCE_INVALID"
     if envelope_type == "org.govp.ai-request/1":
