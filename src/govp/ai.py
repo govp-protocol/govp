@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import hashlib
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,6 +29,8 @@ AI1_CODES = frozenset(
         "AI1_COMPARISON_UNSUPPORTED",
         "AI1_SUBJECT_REQUIRED",
         "AI1_SUBJECT_DIGEST_MISMATCH",
+        "AI1_CHAIN_INCOMPLETE",
+        "AI1_CHAIN_CONFLICT",
     }
 )
 
@@ -49,6 +52,15 @@ class AiReception:
     envelope: dict[str, Any] | None
     checks: dict[str, bool | None]
     warnings: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AiChainReception:
+    """Result of resolving exact causal links in a supplied AI-1 chain."""
+
+    admitted: bool
+    code: str | None
+    records: tuple[AiReception, ...]
 
 
 def _exact(value: Any, fields: set[str]) -> bool:
@@ -316,3 +328,59 @@ def receive_ai(data: bytes, *, subject_bytes: bytes | None) -> AiReception:
     checks["references"] = payload_ok or code not in {"AI1_REFERENCE_INVALID"}
     return AiReception(payload_ok, code, envelope, checks, l0.warnings)
 
+
+def receive_ai_chain(items: list[tuple[bytes, bytes]]) -> AiChainReception:
+    """Validate an ordered request/result/verification bundle without network I/O.
+
+    Completeness is limited to the supplied bundle. Absence of hidden attempts
+    still requires an external append-only witness or enforcement runtime.
+    """
+    if not isinstance(items, list) or not items:
+        return AiChainReception(False, "AI1_CHAIN_INCOMPLETE", ())
+    records: list[AiReception] = []
+    by_id: dict[str, tuple[str, str, dict[str, Any]]] = {}
+    nonces: set[str] = set()
+    attempts: set[tuple[str, str]] = set()
+    for data, subject in items:
+        reception = receive_ai(data, subject_bytes=subject)
+        records.append(reception)
+        if not reception.admitted or reception.envelope is None:
+            return AiChainReception(False, reception.code, tuple(records))
+        envelope = reception.envelope
+        record_id = envelope["id"]
+        if record_id in by_id:
+            return AiChainReception(False, "AI1_CHAIN_CONFLICT", tuple(records))
+        record_digest = "sha256:" + hashlib.sha256(data).hexdigest()
+        record_type = envelope["type"]
+        payload = envelope["payload"]
+        if record_type == "org.govp.ai-request/1":
+            if payload["nonce"] in nonces:
+                return AiChainReception(False, "AI1_CHAIN_CONFLICT", tuple(records))
+            nonces.add(payload["nonce"])
+        elif record_type == "org.govp.ai-result/1":
+            request = by_id.get(payload["request"]["id"])
+            if (
+                request is None
+                or request[0] != "org.govp.ai-request/1"
+                or request[1] != payload["request"]["digest"]
+            ):
+                return AiChainReception(False, "AI1_CHAIN_INCOMPLETE", tuple(records))
+            attempt = (payload["request"]["id"], payload["attempt_id"])
+            if attempt in attempts:
+                return AiChainReception(False, "AI1_CHAIN_CONFLICT", tuple(records))
+            attempts.add(attempt)
+        else:
+            request = by_id.get(payload["request"]["id"])
+            result = by_id.get(payload["result"]["id"])
+            if (
+                request is None
+                or result is None
+                or request[0] != "org.govp.ai-request/1"
+                or result[0] != "org.govp.ai-result/1"
+                or request[1] != payload["request"]["digest"]
+                or result[1] != payload["result"]["digest"]
+                or result[2]["request"] != payload["request"]
+            ):
+                return AiChainReception(False, "AI1_CHAIN_INCOMPLETE", tuple(records))
+        by_id[record_id] = (record_type, record_digest, payload)
+    return AiChainReception(True, None, tuple(records))

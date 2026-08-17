@@ -97,14 +97,21 @@ returns one of:
 - `AI1_COMPARISON_UNSUPPORTED`;
 - `AI1_SUBJECT_REQUIRED`;
 - `AI1_SUBJECT_DIGEST_MISMATCH`.
+- `AI1_CHAIN_INCOMPLETE`;
+- `AI1_CHAIN_CONFLICT`.
 
 Acceptance means only that the supplied bytes form a valid AI-1 record. Trust,
 authorization, evidence sufficiency, regulatory policy and permission to run
 remain outside GOVP and belong to the receiving system.
+
+The bundle gate additionally resolves every causal digest against earlier
+records in the supplied ordered chain and rejects duplicate IDs, duplicate
+request nonces and repeated `(request, attempt_id)` pairs. This proves internal
+completeness only for that supplied bundle; it cannot rule out records withheld
+from the receiver.
 
 ## Offline verification
 
 L0 and AI-1 semantic validation are offline. Native witness verification,
 publisher identity, current key status and recomputation may be unavailable;
 unavailable checks MUST NOT be promoted to successful claims.
-

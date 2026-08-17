@@ -2,7 +2,7 @@ import base64
 import json
 from pathlib import Path
 
-from govp.ai import AI1_CODES, receive_ai
+from govp.ai import AI1_CODES, receive_ai, receive_ai_chain
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -12,7 +12,7 @@ def _vectors():
 
 
 def test_ai_vectors_reproduce_gate_results():
-    assert len(AI1_CODES) == 9
+    assert len(AI1_CODES) == 11
     for vector in _vectors():
         result = receive_ai(
             base64.b64decode(vector["transport_base64"]),
@@ -53,3 +53,32 @@ def test_ai_schema_accepts_positive_and_rejects_negative_payloads():
         }
         assert schema_ok is expected, vector["name"]
 
+
+def test_ai_chain_resolves_exact_predecessors_and_rejects_missing_request():
+    vectors = _vectors()
+    valid = vectors[:3]
+    items = [
+        (
+            base64.b64decode(vector["transport_base64"]),
+            base64.b64decode(vector["subject_base64"]),
+        )
+        for vector in valid
+    ]
+    assert receive_ai_chain(items).admitted is True
+    missing = receive_ai_chain(items[1:])
+    assert missing.admitted is False
+    assert missing.code == "AI1_CHAIN_INCOMPLETE"
+
+
+def test_ai_chain_rejects_duplicate_record_and_attempt():
+    vectors = _vectors()
+    request = (
+        base64.b64decode(vectors[0]["transport_base64"]),
+        base64.b64decode(vectors[0]["subject_base64"]),
+    )
+    result = (
+        base64.b64decode(vectors[1]["transport_base64"]),
+        base64.b64decode(vectors[1]["subject_base64"]),
+    )
+    assert receive_ai_chain([request, request]).code == "AI1_CHAIN_CONFLICT"
+    assert receive_ai_chain([request, result, result]).code == "AI1_CHAIN_CONFLICT"

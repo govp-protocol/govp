@@ -4,8 +4,10 @@ from .ai import (
     AI1_CODES,
     AI_EXTENSION,
     AI_TYPES,
+    AiChainReception,
     AiReception,
     receive_ai,
+    receive_ai_chain,
     validate_ai_payload,
 )
 
@@ -62,6 +64,7 @@ __all__ = [
     "AI1_CODES",
     "AI_EXTENSION",
     "AI_TYPES",
+    "AiChainReception",
     "AiReception",
     "EnvelopeVerification",
     "PublicationOutput",
@@ -89,6 +92,7 @@ __all__ = [
     "publication_leaf",
     "publish_request",
     "receive_ai",
+    "receive_ai_chain",
     "serialize_record",
     "sign_envelope",
     "sign_record",
