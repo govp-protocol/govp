@@ -1,0 +1,23 @@
+{
+  "aggregate": "sha256:91cb91f86392770ecfe3165f344d0ffbb7d083d1b3a71c82b9da71555e645bc6",
+  "files": {
+    "conformance/extension-vectors.json": "sha256:973d74cc0e44ae46d05f2556dc851e199c7e5ab212cc4959c609f79eeb1710d2",
+    "conformance/json-vectors.json": "sha256:aa0783a7fb9ab011e04acd9b2e94d66862a28067996a3f9cb0cf3d20dcf9bc67",
+    "conformance/publication-vectors.json": "sha256:419fece879408fbc2d9d1ab569e62e589ef82b675fa024b7e0a57d1c326a98d7",
+    "conformance/status-vectors.json": "sha256:04cebae80ca35d983aef67e414aa31f35b61ed00025c89d977c0d02342080d8d",
+    "conformance/vectors.json": "sha256:97ca58bc321018b0a254c6689a7226938e60201f1e7b350b0a6b614bdc7fba27",
+    "extensions/GOVP-EXTENSION-REGISTRY.md": "sha256:75a534d76421f3932c19224ed919705d6e7c65cdd19f8b23cd40bea3c5879eb3",
+    "extensions/status-1/GOVP-STATUS-1.md": "sha256:f09ad0111ec965ec9ab28b030ed700e548f9dd83e2d4d0524f91969ef862a4d0",
+    "schema/govp-1.schema.json": "sha256:dff982fe2c5617f62c0007c4679307fa7af998c599179a0244d75885137a5451",
+    "schema/govp-evidence-envelope-1.schema.json": "sha256:4f6c1459602cccf1a9c718e59a79d29776039efc170639c7438e0659418a5df3",
+    "schema/govp-publication-1.schema.json": "sha256:e9a00365adf846d333255235ec728a794c6352576f3559d2c3080e28e50c362b",
+    "schema/govp-status-1.schema.json": "sha256:8a3f01fab4a5f5585e61ceaa1060272cb3206e3da72a1d7bc06529fcd25656ed",
+    "spec/GOVP-1.md": "sha256:9ecba448174bd8d7f501bf7be77101b5f6c2e20141f4e6764b0839df8fcc6340",
+    "spec/GOVP-1.txt": "sha256:d002832f1b17723d97d331acd0444f9dfb574e10be426b8725de8eb45d74c0e1",
+    "spec/GOVP-EVIDENCE-ENVELOPE-1.md": "sha256:cc24e1b1f46f2a1521806e33856215d9bd97261727066ff5b023ce42d8e4fd93",
+    "spec/GOVP-EXTENSION-ARCHITECTURE.md": "sha256:7c435ba81a81f516acf96d5c678255d654a5891e00bd00512b60ee1db1aa8613",
+    "spec/GOVP-PUBLICATION-1.md": "sha256:058337cd6f0bbc68cb46ba6809538a7cea7365068d3db3273425bf37c4189653"
+  },
+  "schema": "org.govp.protocol-manifest/1",
+  "source_commit": "e72f5ee73d551206459a9fe5c0d5f8746a0d94bc"
+}
