@@ -217,6 +217,13 @@ binding, not a claim that the referenced attestation is independently valid.
 See `spec/GOVP-EVIDENCE-ENVELOPE-1.md` and
 `spec/GOVP-EXTENSION-ARCHITECTURE.md`.
 
+GOVP AI-1 adds three strictly linked envelope types for a pre-inference
+request, its terminal result and optional recomputation evidence. The public
+`receive_ai` gate validates canonical transport, GOVP L0, exact subject bytes,
+state semantics and causal references without claiming that content is true or
+that an execution is regulatorily sufficient. See
+`extensions/ai-1/GOVP-AI-1.md`.
+
 ## What GOVP proves — and what it does not
 
 | A valid result establishes | A valid result does not establish |

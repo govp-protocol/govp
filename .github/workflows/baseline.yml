@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: govp-protocol/govp-js
-          ref: 5692c67ee64cabb32671bcfc2fd24b1189def07c
+          ref: a33a1ae8b46c279280e69fede97d6cb07eea8af7
           path: govp-js
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4

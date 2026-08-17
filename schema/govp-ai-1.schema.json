@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://govp.io/govp/schemas/govp-ai-1.schema.json",
+  "title": "GOVP AI-1 payloads",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/result" },
+    { "$ref": "#/$defs/verification" }
+  ],
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000\\r\\n]+$" },
+    "disclosure": { "enum": ["digest_only", "sealed", "private", "public"] },
+    "artifact": {
+      "type": "object",
+      "required": ["artifact_digest", "identity_basis", "publisher", "publisher_manifest_digest"],
+      "properties": {
+        "artifact_digest": { "$ref": "#/$defs/digest" },
+        "identity_basis": { "enum": ["artifact_observed", "publisher_attested", "provider_declared"] },
+        "publisher": { "type": ["string", "null"], "maxLength": 200 },
+        "publisher_manifest_digest": { "oneOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["artifact_digest", "backend", "hardware_class", "deterministic_profile"],
+      "properties": {
+        "artifact_digest": { "$ref": "#/$defs/digest" },
+        "backend": { "$ref": "#/$defs/id" },
+        "hardware_class": { "type": ["string", "null"], "maxLength": 200 },
+        "deterministic_profile": { "type": ["string", "null"], "maxLength": 200 }
+      },
+      "additionalProperties": false
+    },
+    "committedInput": {
+      "type": "object",
+      "required": ["digest", "disclosure"],
+      "properties": {
+        "digest": { "$ref": "#/$defs/digest" },
+        "disclosure": { "$ref": "#/$defs/disclosure" }
+      },
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "required": ["id", "digest"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "digest": { "$ref": "#/$defs/digest" } },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": ["kind", "model", "runtime", "input", "inference_parameters", "seed", "nonce", "reproducibility", "commitment"],
+      "properties": {
+        "kind": { "const": "request" },
+        "model": { "$ref": "#/$defs/artifact" },
+        "runtime": { "$ref": "#/$defs/runtime" },
+        "input": { "$ref": "#/$defs/committedInput" },
+        "inference_parameters": { "$ref": "#/$defs/committedInput" },
+        "seed": { "type": ["integer", "null"], "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "nonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{22,200}$" },
+        "reproducibility": {
+          "type": "object",
+          "required": ["claimed", "scope_digest"],
+          "properties": { "claimed": { "type": "boolean" }, "scope_digest": { "$ref": "#/$defs/digest" } },
+          "additionalProperties": false
+        },
+        "commitment": {
+          "type": "object",
+          "required": ["timing", "externalized"],
+          "properties": { "timing": { "const": "pre_inference" }, "externalized": { "type": "boolean" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["kind", "request", "attempt_id", "status", "output_digest", "reason_code", "effective_model_digest", "effective_runtime_digest", "execution_metadata_digest"],
+      "properties": {
+        "kind": { "const": "result" },
+        "request": { "$ref": "#/$defs/link" },
+        "attempt_id": { "$ref": "#/$defs/id" },
+        "status": { "enum": ["SUCCEEDED", "FAILED", "DENIED", "CANCELLED", "TIMED_OUT", "INDETERMINATE"] },
+        "output_digest": { "oneOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+        "reason_code": { "type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$" },
+        "effective_model_digest": { "$ref": "#/$defs/digest" },
+        "effective_runtime_digest": { "$ref": "#/$defs/digest" },
+        "execution_metadata_digest": { "$ref": "#/$defs/digest" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "SUCCEEDED" } }, "required": ["status"] },
+          "then": { "properties": { "output_digest": { "$ref": "#/$defs/digest" }, "reason_code": { "type": "null" } } },
+          "else": { "properties": { "output_digest": { "type": "null" }, "reason_code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": ["kind", "request", "result", "method", "verifier_relationship", "environment_digest", "observed_output_digest", "comparison_profile", "canonicalization_profile", "match"],
+      "properties": {
+        "kind": { "const": "verification" },
+        "request": { "$ref": "#/$defs/link" },
+        "result": { "$ref": "#/$defs/link" },
+        "method": { "const": "recomputation" },
+        "verifier_relationship": { "enum": ["self", "organizationally_separate", "third_party"] },
+        "environment_digest": { "$ref": "#/$defs/digest" },
+        "observed_output_digest": { "$ref": "#/$defs/digest" },
+        "comparison_profile": { "enum": ["exact", "canonicalized"] },
+        "canonicalization_profile": { "type": ["string", "null"], "maxLength": 200 },
+        "match": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "comparison_profile": { "const": "exact" } }, "required": ["comparison_profile"] },
+          "then": { "properties": { "canonicalization_profile": { "type": "null" } } },
+          "else": { "properties": { "canonicalization_profile": { "$ref": "#/$defs/id" } } }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}
