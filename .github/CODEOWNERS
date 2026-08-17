@@ -1,0 +1,12 @@
+# Interim protocol ownership. Add independent maintainers before requiring a
+# CODEOWNERS approval on every pull request.
+* @enekosz
+
+/spec/ @enekosz
+/schema/ @enekosz
+/conformance/ @enekosz
+/extensions/ @enekosz
+/src/govp/ @enekosz
+/.github/workflows/ @enekosz
+/SECURITY.md @enekosz
+/TRADEMARKS.md @enekosz
