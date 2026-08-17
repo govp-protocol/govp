@@ -10,7 +10,6 @@ from .ai import (
     receive_ai_chain,
     validate_ai_payload,
 )
-
 from .core import (
     Verification,
     derive_govp_id,
@@ -98,11 +97,11 @@ __all__ = [
     "sign_record",
     "signing_input",
     "status_format_ok",
+    "validate_ai_payload",
     "verify",
     "verify_envelope",
     "verify_publication_custody",
     "verify_publication_proof",
     "verify_publication_tree",
     "verify_publication_url",
-    "validate_ai_payload",
 ]

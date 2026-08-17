@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import re
 import hashlib
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -302,7 +302,7 @@ def receive_ai(data: bytes, *, subject_bytes: bytes | None) -> AiReception:
         envelope = parse_envelope(text)
         if canonical_json(envelope).encode("utf-8") != data:
             return AiReception(False, "AI1_INVALID_ENVELOPE", None, checks)
-    except Exception:
+    except Exception:  # noqa: BLE001 - untrusted parser boundary must fail closed
         return AiReception(False, "AI1_INVALID_ENVELOPE", None, checks)
     checks["transport"] = True
     if envelope.get("extension") != AI_EXTENSION:
@@ -313,7 +313,7 @@ def receive_ai(data: bytes, *, subject_bytes: bytes | None) -> AiReception:
         return AiReception(False, "AI1_SUBJECT_REQUIRED", envelope, checks)
     try:
         l0 = verify_envelope(envelope, subject_bytes=subject_bytes)
-    except Exception:
+    except Exception:  # noqa: BLE001 - public verifier boundary must fail closed
         return AiReception(False, "AI1_INVALID_ENVELOPE", envelope, checks)
     checks["l0"] = l0.ok
     checks["subject"] = l0.checks["subject"]
