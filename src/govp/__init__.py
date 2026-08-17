@@ -1,5 +1,14 @@
 """Stable public API for the GOVP reference implementation."""
 
+from .ai import (
+    AI1_CODES,
+    AI_EXTENSION,
+    AI_TYPES,
+    AiReception,
+    receive_ai,
+    validate_ai_payload,
+)
+
 from .core import (
     Verification,
     derive_govp_id,
@@ -50,6 +59,10 @@ __version__ = "0.1.13"
 VerifyResult = Verification
 
 __all__ = [
+    "AI1_CODES",
+    "AI_EXTENSION",
+    "AI_TYPES",
+    "AiReception",
     "EnvelopeVerification",
     "PublicationOutput",
     "PublicationVerification",
@@ -75,6 +88,7 @@ __all__ = [
     "publication_entry_id",
     "publication_leaf",
     "publish_request",
+    "receive_ai",
     "serialize_record",
     "sign_envelope",
     "sign_record",
@@ -86,4 +100,5 @@ __all__ = [
     "verify_publication_proof",
     "verify_publication_tree",
     "verify_publication_url",
+    "validate_ai_payload",
 ]

@@ -3,6 +3,15 @@
 All notable verifier changes are documented here. GOVP format compatibility is
 governed by the frozen specification and the published conformance vectors.
 
+## Unreleased
+
+- define GOVP AI-1 request, result and verification evidence without changing
+  GOVP-1 or presenting evidence admission as regulated authorization;
+- add a fail-closed Python receiving gate, privacy/threat model, JSON Schema and
+  byte-exact Python/JavaScript conformance vectors;
+- restrict initial recomputation comparisons to `exact` and explicitly named
+  `canonicalized` profiles.
+
 ## 0.1.13 — 2026-08-11
 
 - add `govp publish`, a static-only organizational publication workflow with
