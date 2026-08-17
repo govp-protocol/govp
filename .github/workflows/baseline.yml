@@ -1,0 +1,99 @@
+name: reproducible-baseline
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Install reviewed build and test inputs
+        run: |
+          python -m pip install -r requirements-release.txt -r requirements-test.txt
+          python -m pip install cyclonedx-bom==7.3.1
+          python -m pip install --no-build-isolation .
+      - name: Exercise protocol surfaces
+        run: |
+          pytest --strict-config --strict-markers
+          govp self-test
+          govp conformance --run
+          govp status-conformance --run
+          govp publication-conformance --run
+      - name: Build twice and require byte-exact distributions
+        run: |
+          epoch="$(git show -s --format=%ct HEAD)"
+          export SOURCE_DATE_EPOCH="$epoch"
+          python -m build --no-isolation --outdir build-one
+          python -m build --no-isolation --outdir build-two
+          cmp build-one/*.whl build-two/*.whl
+          cmp build-one/*.tar.gz build-two/*.tar.gz
+          mkdir -p baseline
+          cp build-one/* baseline/
+      - name: Produce protocol digests and SBOM
+        run: |
+          python tools/protocol_manifest.py \
+            --source-commit "$GITHUB_SHA" \
+            --output baseline/protocol-manifest.json
+          cyclonedx-py environment --output-format JSON --output-file baseline/govp.cdx.json
+          sha256sum baseline/* > baseline/SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: govp-f1-baseline-${{ github.sha }}
+          path: baseline/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Attach GitHub build provenance
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: |
+            baseline/*.whl
+            baseline/*.tar.gz
+            baseline/protocol-manifest.json
+            baseline/govp.cdx.json
+
+  javascript-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GOVP
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          path: govp
+          persist-credentials: false
+      - name: Checkout pinned independent JavaScript verifier
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: govp-protocol/govp-js
+          ref: 5692c67ee64cabb32671bcfc2fd24b1189def07c
+          path: govp-js
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: govp-js/package-lock.json
+      - name: Require byte-identical conformance inputs
+        run: |
+          for vector in govp/conformance/*.json; do
+            cmp "$vector" "govp-js/conformance/$(basename "$vector")"
+          done
+      - name: Run the independent verifier
+        working-directory: govp-js
+        run: |
+          npm ci
+          npm test
+          npm pack --dry-run
