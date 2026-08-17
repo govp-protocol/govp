@@ -8,7 +8,6 @@ import hashlib
 import json
 from pathlib import Path
 
-
 ROOTS = ("spec", "schema", "conformance", "extensions")
 
 
