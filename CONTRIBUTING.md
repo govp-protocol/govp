@@ -59,6 +59,18 @@ pip-audit -r requirements-release.txt --progress-spinner=off
 
 ## Pull-request requirements
 
+Every commit in a pull request must certify the
+[`Developer Certificate of Origin`](DCO) using a real identity:
+
+```text
+Signed-off-by: Full Legal Name <email@example.com>
+```
+
+Use `git commit -s`. The DCO certifies a right to submit; it does not transfer
+copyright. Code may merge only after the maintainer has verified the applicable
+employment assignment or contributor/corporate IP agreement and recorded its
+non-secret authorization reference. See [`IP_BOUNDARY.md`](IP_BOUNDARY.md).
+
 Every pull request must explain whether it affects:
 
 - GOVP-1 signing bytes or canonicalization;
@@ -75,6 +87,10 @@ By submitting a contribution for inclusion, you agree that it is provided
 under Apache License 2.0 and that you have the right to provide it. Do not
 submit customer data, production credentials, personal data, private keys,
 proprietary product code or material outside the public protocol scope.
+
+Do not submit patent-sensitive material until its owner has approved public
+disclosure and the Apache-2.0 patent grant. Marking a proposal confidential in
+a public issue is ineffective; use the private maintainer channel first.
 
 Security reports must use
 [private vulnerability reporting](https://github.com/govp-protocol/govp/security/advisories/new)

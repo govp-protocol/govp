@@ -26,3 +26,10 @@ credentials, private keys, proprietary application code or material outside
 Apache-2.0 governs contributions. Trademark use remains subject to
 [`TRADEMARKS.md`](TRADEMARKS.md); technical conformance does not imply
 certification or endorsement.
+
+Incoming code also follows [`IP_BOUNDARY.md`](IP_BOUNDARY.md). DCO sign-off is
+mandatory provenance but is not sufficient evidence of assignment. Until the
+governance model is deliberately changed, Brilyetz Holding S.L. verifies an
+employment assignment or executed contributor/corporate IP agreement before
+merging third-party code. This preserves a documented chain of title while the
+project remains Apache-2.0 for every recipient.
