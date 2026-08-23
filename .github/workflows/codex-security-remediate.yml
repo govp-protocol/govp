@@ -1,0 +1,148 @@
+name: Codex Security remediation
+
+on:
+  workflow_dispatch:
+    inputs:
+      finding_id:
+        description: Stable finding identifier
+        required: true
+        type: string
+      finding_report:
+        description: Validated finding, evidence, affected path, and expected invariant
+        required: true
+        type: string
+      delivery:
+        description: Deliver the verified change as a draft PR or a private patch artifact
+        required: true
+        default: draft-pr
+        type: choice
+        options:
+          - draft-pr
+          - patch-artifact
+
+concurrency:
+  group: codex-security-remediation-${{ inputs.finding_id }}
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    if: >-
+      vars.CODEX_SECURITY_AUTOMATION_ENABLED == 'true' &&
+      vars.CODEX_SECURITY_PUBLIC_REMEDIATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Prepare validated finding input
+        env:
+          FINDING_ID: ${{ inputs.finding_id }}
+          FINDING_REPORT: ${{ inputs.finding_report }}
+          OPENAI_API_KEY: ${{ secrets.CODEX_SECURITY_API_KEY }}
+        run: |
+          set -euo pipefail
+          if test -z "${OPENAI_API_KEY:-}"; then
+            echo "Missing CODEX_SECURITY_API_KEY repository secret." >&2
+            exit 2
+          fi
+          mkdir -p .codex-security-input
+          printf 'Finding ID: %s\n\n%s\n' "$FINDING_ID" "$FINDING_REPORT" \
+            > .codex-security-input/finding.md
+          printf '%s\n' '.codex-security-input/' >> .git/info/exclude
+
+      - name: Generate and verify focused fix
+        id: codex
+        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e # v1
+        with:
+          openai-api-key: ${{ secrets.CODEX_SECURITY_API_KEY }}
+          prompt-file: .github/codex/prompts/remediate-security-finding.md
+          model: ${{ vars.CODEX_SECURITY_REMEDIATION_MODEL || 'gpt-5.6-sol' }}
+          effort: xhigh
+          sandbox: workspace-write
+          codex-args: '["--ephemeral", "--ask-for-approval", "never"]'
+          output-file: ${{ runner.temp }}/codex-security-remediation-summary.md
+
+      - name: Guard and package the change
+        id: package
+        env:
+          PATCH_FILE: ${{ runner.temp }}/codex-security-fix.patch
+        run: |
+          set -euo pipefail
+          rm -rf .codex-security-input
+
+          protected_changes="$(
+            {
+              git diff HEAD --name-only
+              git ls-files --others --exclude-standard
+            } | grep -E '^\.github/(workflows|actions|codex)/' || true
+          )"
+          if test -n "$protected_changes"; then
+            echo "Remediation attempted to modify protected automation files:" >&2
+            echo "$protected_changes" >&2
+            exit 1
+          fi
+
+          if git diff --quiet HEAD -- && test -z "$(git ls-files --others --exclude-standard)"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          while IFS= read -r -d '' path; do
+            git add -N -- "$path"
+          done < <(git ls-files --others --exclude-standard -z)
+          git diff HEAD --binary > "$PATCH_FILE"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve remediation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: codex-security-remediation-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/codex-security-fix.patch
+            ${{ runner.temp }}/codex-security-remediation-summary.md
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Open draft pull request
+        if: inputs.delivery == 'draft-pr' && steps.package.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FINDING_ID: ${{ inputs.finding_id }}
+          SUMMARY_FILE: ${{ runner.temp }}/codex-security-remediation-summary.md
+        run: |
+          set -euo pipefail
+          safe_id="$(printf '%s' "$FINDING_ID" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-//;s/-$//' | cut -c1-48)"
+          test -n "$safe_id" || safe_id="finding"
+          branch="codex/security-fix-${safe_id}-${GITHUB_RUN_ID}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A
+          git commit -m "security: remediate ${safe_id}"
+          git push --set-upstream origin "$branch"
+
+          body_file="$RUNNER_TEMP/pr-body.md"
+          {
+            printf 'Automated Codex Security remediation for `%s`.\n\n' "$FINDING_ID"
+            printf 'This PR is intentionally a draft. Review the diff, the remediation artifact, and all CI checks before merging.\n\n'
+            if test -s "$SUMMARY_FILE"; then
+              printf '### Verification summary\n\n'
+              sed -n '1,120p' "$SUMMARY_FILE"
+            fi
+          } > "$body_file"
+
+          gh pr create \
+            --draft \
+            --base main \
+            --head "$branch" \
+            --title "Security: remediate ${safe_id}" \
+            --body-file "$body_file"
