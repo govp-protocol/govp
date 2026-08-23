@@ -16,13 +16,25 @@ disabled unless the repository variable `CODEX_SECURITY_AUTOMATION_ENABLED` equa
 they require the repository secret `CODEX_SECURITY_API_KEY`. API-backed scans and remediations can
 incur OpenAI API charges.
 
+## Shared 30 USD budget envelope
+
+This repository shares one dedicated OpenAI API project with the four priority repositories. The
+activation target is 30 USD per calendar month across that project, not 30 USD per repository.
+Pull-request scans default to an estimated 1 USD limit and manually dispatched full scans default
+to 5 USD. Override them only with CODEX_SECURITY_PR_MAX_COST_USD and
+CODEX_SECURITY_FULL_MAX_COST_USD. Codex Security's --max-cost is an estimate, not a hard cap, so
+the OpenAI project must also be monitored in the Usage Dashboard. Deep scans remain outside the
+automatic workflow.
+
 Recommended activation sequence:
 
-1. Add a scoped `CODEX_SECURITY_API_KEY` repository secret with a project spend limit.
-2. Keep `CODEX_SECURITY_AUTOMATION_ENABLED=false` while validating one manual run.
-3. Set `CODEX_SECURITY_REMEDIATION_MODEL` only if overriding the reviewed default.
-4. Set `CODEX_SECURITY_AUTOMATION_ENABLED=true` after the budget and first result are accepted.
-5. Set `CODEX_SECURITY_PUBLIC_REMEDIATION_ENABLED=true` only when publishing the patch through this
+1. Create a dedicated OpenAI API project for these four repositories, record a 30 USD monthly
+   budget target, and configure billing notifications or controls available to the account.
+2. Add that project's scoped CODEX_SECURITY_API_KEY as a repository secret.
+3. Keep CODEX_SECURITY_AUTOMATION_ENABLED=false while validating one manual run.
+4. Set CODEX_SECURITY_REMEDIATION_MODEL only if overriding the reviewed default.
+5. Set CODEX_SECURITY_AUTOMATION_ENABLED=true after the budget and first result are accepted.
+6. Set CODEX_SECURITY_PUBLIC_REMEDIATION_ENABLED=true only when publishing the patch through this
    public repository is acceptable.
-6. Require the scan and existing CI checks in branch protection only after observing stable runtime
+7. Require the scan and existing CI checks in branch protection only after observing stable runtime
    and coverage.

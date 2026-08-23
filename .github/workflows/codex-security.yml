@@ -67,6 +67,8 @@ jobs:
           SCAN_DIR: ${{ runner.temp }}/codex-security-results
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_MAX_COST_USD: ${{ vars.CODEX_SECURITY_PR_MAX_COST_USD || '1' }}
+          FULL_MAX_COST_USD: ${{ vars.CODEX_SECURITY_FULL_MAX_COST_USD || '5' }}
         run: |
           set -euo pipefail
           if test -z "${OPENAI_API_KEY:-}"; then
@@ -75,15 +77,18 @@ jobs:
           fi
 
           scan_args=(--mode standard)
+          max_cost_usd="$FULL_MAX_COST_USD"
           if test "${{ github.event_name }}" = "pull_request"; then
             base_revision="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
             scan_args=(--diff "$base_revision" --head "$HEAD_SHA")
+            max_cost_usd="$PR_MAX_COST_USD"
           fi
 
           set +e
           "$CODEX_SECURITY_BIN" scan . \
             "${scan_args[@]}" \
             --auth api-key \
+            --max-cost "$max_cost_usd" \
             --output-dir "$SCAN_DIR" \
             --fail-on-severity high \
             --json > "$RUNNER_TEMP/codex-security.json"
