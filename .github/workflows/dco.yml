@@ -1,0 +1,35 @@
+name: contribution provenance
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require one valid sign-off per commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          for commit in $(git rev-list "$BASE_SHA..$HEAD_SHA"); do
+            author_email=$(git show -s --format=%ae "$commit")
+            if test "$author_email" = "49699333+dependabot[bot]@users.noreply.github.com"; then
+              continue
+            fi
+            if ! git show -s --format=%B "$commit" | grep -Eq '^Signed-off-by: .+ <[^>]+>$'; then
+              echo "ERROR: commit $commit lacks a valid DCO Signed-off-by line"
+              status=1
+            fi
+          done
+          exit "$status"
+
