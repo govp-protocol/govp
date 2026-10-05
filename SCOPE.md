@@ -22,6 +22,12 @@ customer integrations, private keys, proprietary policy packs, regulated
 enforcement and commercial extensions. Those systems are neither disclosed nor
 required to implement the open protocol family.
 
+In particular, QEL policy, regulated enforcement, evidence-sufficiency,
+certification, audit/forensic operations and domain packs are outside scope.
+Only an independently implementable public interface deliberately approved for
+Apache-2.0 publication may cross this boundary; private implementations and
+patent-sensitive detail do not cross with it.
+
 Conformance claims are scoped. GOVP-1 conformance does not imply conformance
 with an extension, and extension conformance does not imply certification or
 regulatory sufficiency. Compatibility claims are technical claims. They do not
