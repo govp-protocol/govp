@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-version="${GOVP_VERSION:-v0.1.11}"
+version="${GOVP_VERSION:-v0.1.13}"
 install_dir="${GOVP_INSTALL_DIR:-/usr/local/bin}"
 
 case "$(uname -s)" in
@@ -17,7 +17,7 @@ case "$(uname -m)" in
 esac
 
 asset="govp-${os}-${arch}"
-base="https://govp.io/downloads/cli/${version}"
+base="https://github.com/govp-protocol/govp/releases/download/${version}"
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT INT TERM
