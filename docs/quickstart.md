@@ -92,7 +92,7 @@ Clone the repository only when developing GOVP, running the complete source
 test suite or auditing the exact release tree:
 
 ```bash
-git clone --branch v0.1.11 --depth 1 https://github.com/govp-protocol/govp.git
+git clone --branch v0.1.13 --depth 1 https://github.com/govp-protocol/govp.git
 cd govp
 python -m pip install -r requirements-test.txt
 python -m pip install .
