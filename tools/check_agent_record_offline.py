@@ -19,9 +19,14 @@ IMAGE = (
 
 
 def run(command, *, check=True):
-    return subprocess.run(
-        command, text=True, capture_output=True, check=check, timeout=300,
+    result = subprocess.run(
+        command, text=True, capture_output=True, check=False, timeout=300,
     )
+    if check and result.returncode:
+        raise RuntimeError(
+            f"{command}: exit {result.returncode}\n{result.stdout}\n{result.stderr}"
+        )
+    return result
 
 
 def network_control():
