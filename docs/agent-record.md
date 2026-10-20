@@ -88,6 +88,33 @@ python -c "import hashlib,json,pathlib; p=pathlib.Path('examples/agent-record');
 
 Expected: `Output A: PASS`, exit `0`.
 
+## Check installation and verification without external network access
+
+The `agent-record-offline` workflow repeats these checks on a GitHub-hosted
+Ubuntu runner. It downloads hash-pinned public wheels while online, then
+installs GOVP 0.1.13 in a fresh Python environment inside a pinned Linux
+container with `--network none`. Installation uses `--no-index` and
+`--require-hashes`. The fixture and wheels are mounted read-only.
+
+The check requires only a loopback interface, no IPv4 route, and an unreachable
+external connection before and after verification. It asserts the three
+verdicts and the separately referenced output hash. Logs preserve the runner
+identity, commit, image digest, input hashes, isolation settings and results
+between `BEGIN_AGENT_OFFLINE_REPORT` and `END_AGENT_OFFLINE_REPORT`.
+
+To repeat on Linux x86_64 with Python 3.12 and Docker:
+
+```bash
+python -m pip download --only-binary=:all: --require-hashes \
+  -r tools/agent-record-offline-requirements.txt --dest /tmp/agent-record-wheels
+python tools/check_agent_record_offline.py --wheels /tmp/agent-record-wheels
+```
+
+Downloading the image and wheels needs a connection; installation and verification
+inside the container do not. Loopback remains available. This demonstrates
+reproduction on another execution host, not review by an independent evaluator.
+It exercises the released verifier, not an unreleased change to its implementation.
+
 ## Trust limits
 
 The signing key was generated for this demonstration; the private key was
