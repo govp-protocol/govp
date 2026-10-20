@@ -8,6 +8,13 @@
 
 <p align="center"><strong>Open protocol stewarded by Gemacode.</strong></p>
 
+GOVP provides the open verification layer for Gemacode's Containment + Proof
+for autonomous agents. It binds exported records of proposals, authorizations
+and reported outcomes to exact bytes for offline verification by authorized
+parties. Establishing that an action occurred or was blocked also requires the
+source evidence and its trust assumptions.
+[Learn more at gemacode.org](https://gemacode.org/).
+
 GOVP is an open protocol for making files and digital artifacts independently
 verifiable without an account, a central API or a proprietary verifier.
 
