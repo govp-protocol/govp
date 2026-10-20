@@ -147,6 +147,14 @@ For machine-readable output, add `--json`. Exit code `0` means verification
 succeeded, `1` means the record was evaluated and is not valid, and `2` means
 the command or input could not be processed.
 
+## Verify an agent activity record
+
+The [agent-record walkthrough](docs/agent-record.md) follows five fictional
+events: proposal, authorization, action, a second proposal and refusal. Verify
+the original, a changed statement and a changed signed record with the released
+verifier. The sample demonstrates verification of declared bytes; no agent
+or Gemacode containment runtime was executed.
+
 ## Publish evidence without a verification service
 
 `govp publish` runs only in an explicitly authorized CI workload. It verifies
