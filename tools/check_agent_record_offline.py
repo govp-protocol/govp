@@ -12,7 +12,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
 IMAGE = (
     "python:3.12-slim-bookworm@sha256:"
     "2ed6491b93cd49272ee6de2b5a38440c3448360322c089fc23e370722d74179d"
@@ -103,9 +102,10 @@ def verify_inside():
 
 
 def verify_on_host(wheels):
-    requirements = ROOT / "tools/agent-record-offline-requirements.txt"
-    fixture = ROOT / "examples/agent-record"
     script = Path(__file__).resolve()
+    root = script.parents[1]
+    requirements = root / "tools/agent-record-offline-requirements.txt"
+    fixture = root / "examples/agent-record"
     run(["docker", "pull", "--platform", "linux/amd64", IMAGE])
     image = json.loads(run(["docker", "image", "inspect", IMAGE]).stdout)[0]
     command = [
