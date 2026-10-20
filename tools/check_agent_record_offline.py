@@ -116,7 +116,8 @@ def verify_on_host(wheels):
     command = [
         "docker", "create", "--platform", "linux/amd64", "--network", "none",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-        "--read-only", "--tmpfs", "/tmp:rw,nosuid,size=256m",
+        # Native cryptography modules in the temporary venv require executable mappings.
+        "--read-only", "--tmpfs", "/tmp:rw,nosuid,nodev,exec,size=256m",
         "--user", "65534:65534", "--env", "PYTHONDONTWRITEBYTECODE=1",
     ]
     for source, destination in [
@@ -133,6 +134,7 @@ def verify_on_host(wheels):
         security = {
             "network_mode": config["NetworkMode"], "privileged": config["Privileged"],
             "readonly_rootfs": config["ReadonlyRootfs"], "cap_drop": config["CapDrop"],
+            "tmpfs": config["Tmpfs"],
             "security_opt": config["SecurityOpt"], "user": inspected["Config"]["User"],
             "bind_mounts": [
                 {"destination": m["Destination"], "rw": m["RW"]}

@@ -95,6 +95,8 @@ Ubuntu runner. It downloads hash-pinned public wheels while online, then
 installs GOVP 0.1.13 in a fresh Python environment inside a pinned Linux
 container with `--network none`. Installation uses `--no-index` and
 `--require-hashes`. The fixture and wheels are mounted read-only.
+The temporary environment allows executable mappings for the cryptography
+library; the root filesystem remains read-only and all capabilities are dropped.
 
 The check requires only a loopback interface, no IPv4 route, and an unreachable
 external connection before and after verification. It asserts the three
