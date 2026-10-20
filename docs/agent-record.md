@@ -106,6 +106,8 @@ To repeat on Linux x86_64 with Python 3.12 and Docker:
 
 ```bash
 python -m pip download --only-binary=:all: --require-hashes \
+  --platform manylinux_2_28_x86_64 --platform manylinux2014_x86_64 \
+  --python-version 3.12 --implementation cp --abi cp312 --abi abi3 \
   -r tools/agent-record-offline-requirements.txt --dest /tmp/agent-record-wheels
 python tools/check_agent_record_offline.py --wheels /tmp/agent-record-wheels
 ```

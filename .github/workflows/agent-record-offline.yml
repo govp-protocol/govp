@@ -37,6 +37,8 @@ jobs:
       - name: Prepare hash-pinned public wheels while online
         run: >-
           python -m pip download --only-binary=:all: --require-hashes
+          --platform manylinux_2_28_x86_64 --platform manylinux2014_x86_64
+          --python-version 3.12 --implementation cp --abi cp312 --abi abi3
           -r tools/agent-record-offline-requirements.txt
           --dest "$RUNNER_TEMP/agent-record-wheels"
       - name: Install and verify with no external network
