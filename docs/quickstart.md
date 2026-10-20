@@ -46,6 +46,14 @@ govp verify govp-examples/manufacturing-record.govp.txt \
 Do not use only the top-level `ok` value when an integration needs a specific
 guarantee. Retain the individual checks and any advisory `warnings`.
 
+## Follow an agent activity record
+
+The [agent-record walkthrough](agent-record.md) adds a synthetic five-event
+statement, an output file, a signed record and two manipulated copies.
+It uses the same released verifier but is downloaded from the repository
+separately from the bundled manufacturing example. No agent or containment
+runtime is executed, and cryptographic validity does not establish event truth.
+
 ## Verify a remote identity record
 
 ```bash
