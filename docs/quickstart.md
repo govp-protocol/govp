@@ -46,6 +46,48 @@ govp verify govp-examples/manufacturing-record.govp.txt \
 Do not use only the top-level `ok` value when an integration needs a specific
 guarantee. Retain the individual checks and any advisory `warnings`.
 
+## Try the tampered artifact
+
+The bundled examples include a synthetic copy with one changed line.
+It uses the same signed GOVP record, so the record signature still passes,
+but the modified artifact bytes no longer match the signed SHA-256 digest.
+
+```bash
+govp verify govp-examples/manufacturing-record.govp.txt \
+  --asset govp-examples/manufacturing-record.tampered.statement.txt
+```
+
+Expected rejection:
+
+```text
+GOVP verification: INVALID
+  format       pass
+  signature    pass
+  govp-id      pass
+  canonical    not checked
+  asset        FAIL
+  record       GOVP-DOC-cb352d4b8a77
+```
+
+This failure does not mean the signed record was forged. It means the
+supplied artifact is not the exact artifact described by that record —
+the SHA-256 digest of the file you provided does not match the digest
+the signer committed to inside the record. The command exits with
+status `1`, making the same check usable in local workflows and CI.
+
+For machine-readable output:
+
+```bash
+govp verify govp-examples/manufacturing-record.govp.txt \
+  --asset govp-examples/manufacturing-record.tampered.statement.txt \
+  --json
+```
+
+The JSON output includes `ok: false` and `checks.asset.ok: false`,
+while `checks.signature.ok` remains `true`. This distinction is
+important: the signature is valid, but the asset does not match what
+was signed.
+
 ## Follow an agent activity record
 
 The [agent-record walkthrough](agent-record.md) adds a synthetic five-event
