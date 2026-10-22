@@ -8,6 +8,10 @@
 
 <p align="center"><strong>Open protocol stewarded by Gemacode.</strong></p>
 
+**Gemacode = CONTAINMENT + PROOF · for autonomous agents · Verified from outside**
+
+GOVP-1 stable · verifier **0.1.13** · [govp.io](https://govp.io/)
+
 GOVP provides the open verification layer for Gemacode's Containment + Proof
 for autonomous agents. It binds exported records of proposals, authorizations
 and reported outcomes to exact bytes for offline verification by authorized
