@@ -2,6 +2,10 @@ version: 2
 updates:
   - package-ecosystem: pip
     directory: /
+    # This fixture verifies the documented oldest supported runtime versions.
+    # Production and release dependencies remain in the update scan.
+    exclude-paths:
+      - requirements-minimum.txt
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -13,3 +17,7 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     labels: [dependencies, github-actions]
+    groups:
+      codeql:
+        patterns:
+          - "github/codeql-action/*"
