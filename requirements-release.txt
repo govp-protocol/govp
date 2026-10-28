@@ -1,7 +1,7 @@
 # Direct release inputs used to keep GOVP release jobs on a reviewed toolchain.
 # Transitive resolution is recorded by the release logs and must be reviewed
 # before each tag; this file is not a cross-platform hash lock.
-build==1.5.0
+build==1.6.1
 certifi==2026.10.19
 cryptography==50.0.0
 hatchling==1.27.0
